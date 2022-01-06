@@ -41,8 +41,9 @@ about_content: |
   as well as DevOps tasks. My other main responsibilities are writing technical briefs, code reviews, mentoring and interviews.
   
   I'm a fluent `Java` developer, but I'm not _obsessed_ with one or more languages in particular.
-  I see my coding skills as a tool to turn great ideas into amazing products and I'm very keen to expand my skillset on a daily basis. At TrueLayer I've been playing quite a lot with `C#` and `Rust`.
-  I'm intrigued by Devops and I've been working for a long time now with `AWS`, `Terraform` and `Kubernetes`.
+  I see my coding skills as a tool to turn great ideas into amazing products and I'm very keen to expand my skillset on a daily basis.
+  At TrueLayer I've been playing quite a lot with `C#/.NET Core` and `Rust`. I'm intrigued by Devops and I've been working for a long time now with `AWS`,
+  `Terraform` and `Kubernetes`.
   
   Over the last years I've been focussing in the payments business area, ranging from carrier billing to online banking.
 
@@ -61,7 +62,7 @@ content:
           connecting new banks to our platform and building internal services to collect user data about accounts and transactions or initiate
           payments via _Open Banking_ services. I dedicated a big chunk of my time to the migration of production services to a completely new Kubernetes cluster on the AWS cloud.
           
-          I mostly worked in C#/.NET core and took care of Kubernetes resources.
+          I mostly worked in C#/.NET Core and took care of Kubernetes resources.
 
           In the last months I joined a product team which is responsibile of building a recurring payments product based on Open Banking and UK Direct debits.
           After an initial phase mostly made of technical discovery, technical design and planning, i'm now more focussed on the building phase of our product.
@@ -143,7 +144,7 @@ content:
   
 
 # Footer
-footer_show_references: true
+footer_show_references: false
 # references_title: References on request (Override references text)
 
 # Build settings

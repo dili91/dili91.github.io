@@ -27,9 +27,9 @@ additional_links:
 
 # Google Analytics and Tag Manager
 # Using more than one of these may cause issues with reporting
-# gtm: "GTM-0000000"
-gtag: "G-LRQXR3467B"
-# google_analytics: "UA-00000000-0"
+# gtm: "G-LRQXR3467B"
+#gtag: "G-LRQXR3467B"
+google_analytics: "G-LRQXR3467B"
 
 # About Section
 about_title: Whoami

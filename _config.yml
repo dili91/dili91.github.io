@@ -45,9 +45,18 @@ additional_links:
 about_title: Whoami
 about_profile_image: images/profile.jpeg
 about_content: | # this will include new lines to allow paragraphs
-  I'm Andrea and I'm a senior software engineer currently working for [TrueLayer](https://truelayer.com).
+  My name is Andrea and I'm software engineer currently working at [TrueLayer](https://truelayer.com).
   
-  TBD
+  As a senior backend engineer I dedicate most of my time at designing and building APIs and/or internal services,
+  as well as DevOps related tasks. My other main responsibilities are writing technical briefs, code reviews, mentoring and interviews.
+  
+  I'm a fluent `Java` developer, though I'm not obsessed with one or more languages in particular.
+  I see my coding skills as a tool to turn interesting ideas into concrete products. I'm very keen to experiment with new technologies
+  and to expand my skillset on a daily basis. At TrueLayer I've been playing quite a lot with `C#` and `Rust`.
+  I'm intrigued by Devops and I've been working for a long time now with `AWS`, `Terraform` and `Kubernetes`.
+  
+  Over the last years I've been focussing in the payments business area, ranging from carrier billing to online banking.
+
   
 content:
   # - title: Projects # Title for the section

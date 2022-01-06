@@ -28,8 +28,8 @@ additional_links:
 # Google Analytics and Tag Manager
 # Using more than one of these may cause issues with reporting
 # gtm: "G-LRQXR3467B"
-#gtag: "G-LRQXR3467B"
-google_analytics: "G-LRQXR3467B"
+gtag: "G-LRQXR3467B"
+# google_analytics: "G-LRQXR3467B"
 
 # About Section
 about_title: Whoami

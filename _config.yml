@@ -9,7 +9,6 @@ version: 2
 name: Andrea Di Lisio
 title: Senior Software Engineer
 email: andrea.dilisio91@gmail.com
-# website: www.goole.com
 
 # Dark Mode (true/false/never)
 darkmode: false
@@ -18,16 +17,7 @@ darkmode: false
 twitter_username: AndreaDili
 github_username:  dili91
 stackoverflow_username: "5779776"
-# dribbble_username: jekyll
-# facebook_username: jekyll
-# flickr_username: jekyll
-# instagram_username: jameswgrant
 linkedin_username: andrea-di-lisio
-# xing_username: jekyll
-# pinterest_username: jekyll
-# youtube_username: globalmtb
-# googleplus_username: +jekyll
-# orcid_username: 0000-0000-0000-0000
 
 # Additional icon links
 additional_links:
@@ -44,24 +34,91 @@ additional_links:
 # About Section
 about_title: Whoami
 about_profile_image: images/profile.jpeg
-about_content: | # this will include new lines to allow paragraphs
-  My name is Andrea and I'm software engineer currently working at [TrueLayer](https://truelayer.com).
+about_content: |
+  My name is Andrea and I'm software engineer currently working at TrueLayer.
   
-  As a senior backend engineer I dedicate most of my time at designing and building APIs and/or internal services,
-  as well as DevOps related tasks. My other main responsibilities are writing technical briefs, code reviews, mentoring and interviews.
+  As a senior backend engineer I dedicate most of my time at designing and building APIs and internal services,
+  as well as DevOps tasks. My other main responsibilities are writing technical briefs, code reviews, mentoring and interviews.
   
-  I'm a fluent `Java` developer, though I'm not obsessed with one or more languages in particular.
-  I see my coding skills as a tool to turn interesting ideas into concrete products. I'm very keen to experiment with new technologies
-  and to expand my skillset on a daily basis. At TrueLayer I've been playing quite a lot with `C#` and `Rust`.
+  I'm a fluent `Java` developer, but I'm not _obsessed_ with one or more languages in particular.
+  I see my coding skills as a tool to turn great ideas into amazing products and I'm very keen to expand my skillset on a daily basis. At TrueLayer I've been playing quite a lot with `C#` and `Rust`.
   I'm intrigued by Devops and I've been working for a long time now with `AWS`, `Terraform` and `Kubernetes`.
   
   Over the last years I've been focussing in the payments business area, ranging from carrier billing to online banking.
 
   
 content:
-  # - title: Projects # Title for the section
-  #   layout: list # Type of content section (list/text)
-  #   content:
+  - title: Experience
+    layout: list
+    content:
+      - layout: left
+        title: TrueLayer
+        link: truelayer.com
+        sub_title: Senior Software Engineer
+        caption: April 2020 - Present
+        description: |
+          I initially joined the UK & Ireland connectivity team as a senior software engineer. My main resposibilities involved 
+          connecting new banks to our platform and building internal services to collect user data about accounts and transactions or initiate
+          payments via _Open Banking_ services. I dedicated a big chunk of my time to the migration of production services to a completely new Kubernetes cluster on the AWS cloud.
+          
+          I mostly worked in C#/.NET core and took care of Kubernetes resources.
+
+          In the last months I joined a product team which is responsibile of building a recurring payments product based on Open Banking and UK Direct debits.
+          After an initial phase mostly made of technical discovery, technical design and planning, i'm now more focussed on the building phase of our product.
+          
+          Our stack is almost completely made of Rust, with a glimpse of C#.
+      - layout: left
+        title: Onebip / DIMOCO
+        link: https://dimoco.eu/carrierbilling/
+        link_text: dimoco.eu
+        sub_title: Devops, Senior Software Engineer
+        caption: May 2019 - April 2020
+        description: |
+          Officially hired in Italy by Onebip but remotely working for DIMOCO's carrier billing section, as software engineer in a QA and DevOps team.
+          When I joined the company, the payments product team was fully committed at replacing a legacy payment infrastructure with a new one based on microservices,
+          which aimed to be way more scalable and extensible than the previous one. 
+          I was responsible of maintaining and evolving an internal testing infrastructure, meant to suport this transition with the help of end-to-end tests on
+          mobile devices connected to physical servers across different countries in Europe. 
+          
+          During the last months of my experience I transitioned to the payments product team, where I implemented a translation layer so that our live customers
+          could interact with the new infrastructure without any changes to their legacy integration.
+
+          I mostly worked with Java on the product team and used Groovy and bash as scripting language when taking care of Devops tasks.
+      - layout: left
+        title: Vipera
+        link: vipera.com
+        sub_title: Software Engineer, Technical lead
+        caption: January 2017 - April May 2019
+        description: |
+          //todo  
+      - layout: left
+        title: Codd&Date
+        link: codd-date.com
+        sub_title: Software Engineer
+        caption: November 2013 - January 2017
+        description: |
+          //todo            
+  - title: Courses and certifications
+    layout: text
+    content: |
+      //todo
+  - title: Education
+    layout: list
+    content:
+      - layout: left
+        title: Politecnico di Milano
+        caption: 2010 - 2014
+        sub_title: Computer engineering
+        description: | 
+          //todo
+      - layout: left
+        title: Liceo scientifico Vittorio Veneto
+        caption: 2005 - 2010
+        sub_title: Scientific high school  
+  - title: Extra projects # Title for the section
+    layout: text # Type of content section (list/text)
+    content: |
+      //todo
   #     - layout: top-middle
   #       title: Super awesome project
   #       link: github.com/sproogen
@@ -77,45 +134,12 @@ content:
   #         This is probably one of the greatest apps ever created, if you don't agree you're probably wrong.
   #       description: | # this will include new lines to allow paragraphs
   #         I started this project as a way if learning <mark>React</mark> and it has since grown into a fully fledged app. I have learned many skills through this and been I'm very proud of having this in my portfolio. If you don't have a project as awesome as this I would advise you make one.
-
-  - title: Experience # Title for the section
-    layout: list # Type of content section (list/text)
-    content:
-      - layout: left
-        title: The Boring Company
-        link: boringcompany.com
-        # link_text: boringcompany.com
-        sub_title: Senior Network System Administrator
-        caption: November 2017 - Present
-        quote: >
-          Solving 21st century problems by diging holes and making game changing products like the *not a flamethrower*
-        description: | # this will include new lines to allow paragraphs
-            Every company needs its networks properly administered and The Boring Compay is no exception. Digging holes is hard and I play my part making sure the whole company stays connected. I lead a team of 5 people and enjoy driving the company to try new technologies.
-  - title: Course and certifications
-    layout: text
-    content: | # this will include new lines to allow paragraphs
-      TBD
-  - title: Education # Title for the section
-    layout: list # Type of content section (list/text)
-    content:
-      - layout: left
-        title: Politecnicno di Milano
-        caption: 2010 - 2014
-        sub_title: Computer engineering
-        # quote: >
-        #   Established in 1636, Harvard is the oldest higher education institution in the United States, and is widely regarded in terms of its influence, reputation, and academic pedigree as a leading university in not just the US but also the world.
-        # description: | # this will include new lines to allow paragraphs
-        #   During my time at Harvard I learnt most of my key skills that have I have taken through my career such as teamwork and working to tight deadlines. I thouroughly enjoyed my time as university and learnt a lot about a healthy work life balance.
-
-        #   I spent a lot of my free time as a committee member of the *Harvard Mountaineering Club* taking on roles such as *Trip Secretary* and *Vice-President*.
-      - layout: left
-        title: Liceo scientifico Vittorio Veneto
-        caption: 2005 - 2010
-        sub_title: Scientific high school
+          
   - title: A Little More About Me
     layout: text
     content: | # this will include new lines to allow paragraphs
-      TBD
+      //todo
+
   
 
 # Footer

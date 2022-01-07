@@ -1,6 +1,6 @@
-# dili91.github.io
+# dili91 resume
 
-Personal site hosted at https://dili91.github.io
+Personal resume hosted at https://dili91.github.io
 
 ## Running locally
 

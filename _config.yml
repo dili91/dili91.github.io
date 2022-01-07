@@ -61,13 +61,12 @@ content:
           I initially joined the UK & Ireland connectivity team as a senior software engineer. My main resposibilities involved 
           connecting new banks to our platform and building internal services to collect user data about accounts and transactions or initiate
           payments via _Open Banking_ services. I dedicated a big chunk of my time to the migration of production services to a completely new Kubernetes cluster on the AWS cloud.
-          
-          I mostly worked in C#/.NET Core and took care of Kubernetes resources.
 
           In the last months I joined a product team which is responsibile of building a recurring payments product based on Open Banking and UK Direct debits.
           After an initial phase mostly made of technical discovery, technical design and planning, i'm now more focussed on the building phase of our product.
           
-          Our stack is almost completely made of Rust, with a glimpse of C#.
+          I mostly work in Rust, C# and with Kubernetes resources. In my _spare time_ I'm actively contributing to a Java SDK which will be made available in future to our customers 
+          as an easy way to interact with our new payments APIs.
       - layout: left
         title: Onebip / DIMOCO
         link: https://dimoco.eu/carrierbilling/
@@ -87,7 +86,7 @@ content:
           I mostly worked with Java on the product team and used Groovy and bash as scripting language when taking care of Devops tasks.
       - layout: left
         title: Vipera Plc / Fabrick
-        link: fabrick.com
+        link_text: fabrick.com
         link: https://www.fabrick.com/acquisition-of-vipera-plc/
         sub_title: Software Engineer, Technical lead
         caption: January 2017 - April May 2019

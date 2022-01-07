@@ -100,9 +100,62 @@ content:
         description: |
           //todo            
   - title: Courses and certifications
-    layout: text
-    content: |
-      //todo
+    layout: list
+    content:
+      - layout: left
+        title: The Principal Developer
+        link_text: principal.dev
+        link: https://principal.dev/
+        caption: Septemper 2021
+        description: |
+          While working at TrueLayer I had the chance to attend a 2 day course with [Eduards Sizovs](https://sizovs.net/) named
+          _The Principal Developer_. We touched many //todo
+
+          Certificate id: <a href="https://certs.devchampions.com/RHMN9SF7PF/" target="_blank">RHMN9SF7PF</a>
+      - layout: left
+        title: Distributed Systems Design Fundamentals
+        link_text: learn.particular.net
+        link: https://learn.particular.net/courses/distributed-systems-design-fundamentals-online
+        caption: July 2021
+        description: |
+          //todo
+
+          Certificate id: <a href="https://www.credential.net/5787fac1-76d4-4706-ba1e-12647b7c0a63" target="_blank">5787fac1-76d4-4706-ba1e-12647b7c0a63</a>    
+      - layout: left
+        title: Microservices Fundamentals
+        link_text: coursera.org
+        link: https://www.coursera.org/
+        caption: January 2020
+        description: |
+          //todo
+
+          Certificate id: <a href="https://www.credly.com/badges/f09fa5c4-a7c5-496f-990d-14ec5f5c8be3" target="_blank">f09fa5c4-a7c5-496f-990d-14ec5f5c8be3</a>
+      - layout: left
+        title: Certified Kubernetes Application Developer (CKAD)
+        link_text: cncf.io
+        link: https://www.cncf.io/certification/ckad/
+        caption: December 2019
+        description: |
+          //todo
+
+          Certificate id: <a href="https://www.credly.com/badges/690c3b28-caec-4a2b-aa5c-d9a20922dbbd" target="_blank">CKAD-1900-002224-0100</a>
+      - layout: left
+        title: IBM Blockchain Foundation for Developers
+        link_text: coursera.org
+        link: https://www.coursera.org/
+        caption: June 2018
+        description: |
+          //todo
+
+          Certificate id: <a href="https://www.coursera.org/account/accomplishments/verify/FZ2TUU4WGPBK" target="_blank">FZ2TUU4WGPBK</a>
+      - layout: left
+        title: MongoDB for Java Developers (M220J)
+        link_text: university.mongodb.com
+        link: https://university.mongodb.com/courses/M220J/about
+        caption: June 2015
+        description: |
+          //todo
+  
   - title: Education
     layout: list
     content:
@@ -140,7 +193,6 @@ content:
     layout: text
     content: | # this will include new lines to allow paragraphs
       //todo
-
   
 
 # Footer

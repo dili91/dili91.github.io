@@ -1,4 +1,4 @@
-# dili91 resume
+# Personal resume
 
 Personal resume hosted at https://dili91.github.io
 

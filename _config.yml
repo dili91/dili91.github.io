@@ -91,14 +91,19 @@ content:
         sub_title: Software Engineer, Technical lead
         caption: January 2017 - April May 2019
         description: |
-          //todo  
+          I joined Vipera as a Backend software developer. I was mostly working on a proprietary banking product build on top of Java OSGi.
+          //todo
       - layout: left
         title: Codd&Date
         link: www.codd-date.com
         sub_title: Software Engineer
         caption: November 2013 - January 2017
         description: |
-          //todo            
+          My first working experience. I've been working for the first 6 months as intern, and I had the chance to experiment both
+          on frontend and backend software development. It was a great opportunity for me to understand my desired career path.
+          I got my hands dirty initially on mobile hybrid development, then I slowly transitioned to backend development first with 
+          a bit of .NET and eventually Java. Here is where I started seeing live customer on the AWS platform and had fun solving 
+          my first performance and scalability headaches with cloud services. Worked mainly for retail and banking customers.
   - title: Courses and certifications
     layout: list
     content:

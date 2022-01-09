@@ -109,7 +109,7 @@ content:
         sub_title: Software Engineer
         caption: November 2013 - January 2017
         description: |
-          My first working experience. I've been working for the first 6 months as intern, and I had the chance to experiment both
+          My first working experience. I've been working for the first 3 months as intern, and I had the chance to experiment both
           on frontend and backend software development. It was a great opportunity for me to understand my desired career path.
           I got my hands dirty initially on mobile hybrid development, then I slowly transitioned to backend development first with 
           a bit of .NET and eventually Java. Here is where I started seeing live customer on the AWS platform and had fun solving 
@@ -182,39 +182,55 @@ content:
     content:
       - layout: left
         title: Politecnico di Milano
-        caption: 2010 - 2014
+        caption: 2010 - 2013
         sub_title: Computer engineering
         description: | 
-          //todo
+          I attended Politecnico's Computering engineering course after high school. On my third and last year I converted an optional exam into 
+          an internship of 3 months which I completed in Codd&Date. Soon after that I was offered a job and I decided to prioritize my 
+          working experience over my studies. Eventually that move led to me not completing my last bachelor exams, but I'm fine with it.
+          Nevertheless these 3 years were crucial to understand what I wanted from my career and I see those as a fundamental step for my 
+          growht and who I am right now.
       - layout: left
         title: Liceo scientifico Vittorio Veneto
         caption: 2005 - 2010
         sub_title: Scientific high school  
-  - title: Extra projects # Title for the section
-    layout: text # Type of content section (list/text)
-    content: |
-      //todo
-  #     - layout: top-middle
-  #       title: Super awesome project
-  #       link: github.com/sproogen
-  #       # link_text: Project Website
-  #       additional_links:
-  #         - title:  sproogen/modern-resume-theme
-  #           icon: fab fa-github
-  #           url: github.com/sproogen/modern-resume-theme
-  #         # - title:  Github page for project (eg. sproogen/modern-resume-theme)
-  #         #   icon: fab fa-github
-  #         #   url: Link to project (eg. sproogen.github.io/modern-resume-theme)
-  #       quote: >
-  #         This is probably one of the greatest apps ever created, if you don't agree you're probably wrong.
-  #       description: | # this will include new lines to allow paragraphs
-  #         I started this project as a way if learning <mark>React</mark> and it has since grown into a fully fledged app. I have learned many skills through this and been I'm very proud of having this in my portfolio. If you don't have a project as awesome as this I would advise you make one.
-          
+        description: | 
+          I attended a scientific high school, with courses in both english and german (which to be honest I completely forgot). 
+          Nothing much to add. Fun times! :)
+            
   - title: A Little More About Me
     layout: text
-    content: | # this will include new lines to allow paragraphs
-      //todo
+    content: |
+      > If you feel like you're the dumbest person in the room, you're in the correct room.
+
+      The above one is one of my favorite mantra: I love to sorround myself with smart and motivated people because it's always a learning and 
+      humbling experience at the same time. This is exaclty what's happening in TrueLayer, where we created an amazing movement and an extremely ambitious mission which is 
+      _Opening up finance_, that is streamline as much as we can the access to banking data and payments. 
+      
+      As mentioned in my intro I'm not scared at all by learning new languages or skills in general as long I can see motivation and commitment around me. 
+      I see them as an investment and a way to train my curiosity. I love being part of a community and being in the office spaces and travelling - pandemic permitting.  
   
+      In addition to what I do for TrueLayer I like taking care of extra projects in my extra time. I try to work on open source projects 
+      whenever I can - some of my contributions are available on my Github profile.
+      I've been recently helping a few small startups in Milan on either cloud infrastructure optimizations or with technical consultancy in general.
+
+      When I'm not using my laptop I like doing sports, football, padel, ski and workouts being my favourites.
+      I love living my city spaces either on my own or along with friends: cinema, parks, pubs, wineries and restaurants.
+      I like listening to (a lot of) music, especially rock, blues and soul music. I'm a self taught guitar player but i'm not planning to organize a concert anytime soon :) 
+
+      I recently re-discovered the joy of reading and I try to read as much as I can during the year. 
+      Below a few titles I've been (or I am) recently enjoying:
+      - <a href="https://www.goodreads.com/book/show/53916142-a-life-on-our-planet">A Life on Our Planet</a>, David Attenborough
+      - <a href="https://www.goodreads.com/book/show/6480781-open">Open</a>, Andre Agassi
+      - <a href="https://www.goodreads.com/book/show/52647113-apropos-of-nothing">Apropos of Nothing</a>, Woody Allen
+      - <a href="https://www.goodreads.com/book/show/34890015-factfulness">Factfulness</a>, Hans Rosling
+      - <a href="https://www.goodreads.com/book/show/33600.Shantaram">Shantaram</a>, Gregory David Roberts
+      - <a href="https://www.goodreads.com/book/show/39996759-a-philosophy-of-software-design">A Philosophy of Software Design</a>, John Ousterhout
+      - <a href="https://www.goodreads.com/book/show/23463279-designing-data-intensive-applications">Designing Data-Intensive Applications</a>, Martin Kleppmann
+      - <a href="https://www.goodreads.com/book/show/25550614-programming-rust">Programming Rust: Fast, Safe Systems Development</a>, Jim Blandy
+      - <a href="https://www.goodreads.com/book/show/55730109-zero-to-production-in-rust">Zero To Production In Rust</a>, Luca Palmieri
+      
+
 
 # Footer
 footer_show_references: false

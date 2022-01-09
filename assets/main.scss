@@ -3,3 +3,19 @@
 ---
 
 @import 'modern-resume-theme';
+
+code{
+    background-color: rgb(210, 250, 222);
+    color: rgb(0, 136, 45);
+}
+
+a{
+    color: rgb(4, 170, 59);
+    text-decoration: underline;
+}
+a:hover{
+    color: rgb(0, 80, 27); 
+}
+.dark a{
+    color: rgb(210, 250, 222);
+}

@@ -32,7 +32,7 @@ gtag: "G-LRQXR3467B"
 # google_analytics: "G-LRQXR3467B"
 
 # About Section
-about_title: Whoami
+about_title: whoami
 about_profile_image: images/profile.jpeg
 about_content: |
   My name is Andrea and I'm currently working as senior software engineer for TrueLayer.

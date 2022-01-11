@@ -63,10 +63,10 @@ content:
           payments via _Open Banking_ services. I dedicated a big chunk of my time to the migration of production services to a completely new Kubernetes cluster on the AWS cloud.
 
           In the last few months I have joined a product team which is responsibile of building a recurring payments product based on _Open Banking_ and UK Direct debits.
-          After an initial phase mostly made of technical discovery, technical design and planning, I'm now more focussed on the building phase of our product.
+          After an initial phase mostly made of technical discovery and planning, I'm now more focussed on the building phase of our product.
           
-          I mostly work in Rust, C# and with Kubernetes resources. In my _spare time_ I'm actively contributing to a Java client library which will be made available in future to our customers 
-          as an easy way to interact with our new _payments_ APIs.
+          I mostly work in Rust, C# and with Kubernetes resources. In my _spare time_ I'm actively contributing to a Java client library which will allow our customers 
+          to easily interact with our new _payments_ APIs.
       - layout: left
         title: Onebip / DIMOCO
         link: https://dimoco.eu/carrierbilling/
@@ -113,7 +113,7 @@ content:
           on frontend and backend software development. It was a great opportunity for me to understand my desired career path.
           I started on mobile hybrid development, then I slowly transitioned to backend development first with 
           a bit of .NET and eventually Java. Here is where I started seeing live customer on the AWS platform and had fun solving 
-          my first performance and scalability headaches with cloud services. Worked mainly for retail and banking customers.
+          my first performance and scalability headaches with cloud services.
   - title: Courses and certifications
     layout: list
     content:
@@ -134,7 +134,7 @@ content:
         link: https://learn.particular.net/courses/distributed-systems-design-fundamentals-online
         caption: July 2021
         description: |
-          Attended and loved this online course by <a href="https://udidahan.com/" target="_blank">Udi Dahan</a> on system design fundamentals. I look forward to attending the advanced course
+          I attended and loved this online course by <a href="https://udidahan.com/" target="_blank">Udi Dahan</a> on system design fundamentals. I look forward to attending the advanced course
           as soon as I can.  
 
           Certificate id: <a href="https://www.credential.net/5787fac1-76d4-4706-ba1e-12647b7c0a63" target="_blank">5787fac1-76d4-4706-ba1e-12647b7c0a63</a>    
@@ -144,7 +144,7 @@ content:
         link: https://www.coursera.org/
         caption: January 2020
         description: |
-          This IBM course offered a sound theoretical introduction to microservices and their implications.
+          This IBM course offered a theoretical introduction to microservices and their implications.
 
           Certificate id: <a href="https://www.credly.com/badges/f09fa5c4-a7c5-496f-990d-14ec5f5c8be3" target="_blank">f09fa5c4-a7c5-496f-990d-14ec5f5c8be3</a>
       - layout: left
@@ -153,8 +153,8 @@ content:
         link: https://www.cncf.io/certification/ckad/
         caption: December 2019
         description: |
-          I had been working with Docker and Kubernetes for a long time and I felt like it was time to strengthen my knowledge and proficiency with that.
-          Completed this course while working as DevOps for DIMOCO, scoring a result of 93/100.
+          I had been working with Kubernetes for a long time and I wanted to strengthen my knowledge and proficiency with that.
+          I completed this course while working as DevOps for DIMOCO, scoring a result of 93/100.
 
           Certificate id: <a href="https://www.credly.com/badges/690c3b28-caec-4a2b-aa5c-d9a20922dbbd" target="_blank">CKAD-1900-002224-0100</a>
       - layout: left
@@ -164,7 +164,7 @@ content:
         caption: June 2018
         description: |
           As I was hearing the term _Blockchain_ more and more often, I wanted to know more about the theory behind it and its possible applications.
-          Attended this brief course online out of personal curiosity.
+          I attended this brief course online out of personal curiosity.
 
           Certificate id: <a href="https://www.coursera.org/account/accomplishments/verify/FZ2TUU4WGPBK" target="_blank">FZ2TUU4WGPBK</a>
       - layout: left
@@ -184,11 +184,11 @@ content:
         caption: 2010 - 2013
         sub_title: Computer engineering
         description: | 
-          I attended Politecnico's Computering engineering course after high school. On my third and last year I converted an optional exam into 
-          an internship of 3 months which I completed in Codd&Date. Soon after that I was offered a job and I decided to prioritize my 
-          working experience over my studies. Eventually that move led to me not completing my last bachelor exams, but I'm fine with it.
-          Nevertheless these 3 years were crucial to understand what I wanted from my career and I see those as a fundamental step for my 
-          growth and who I am right now.
+          I attended Politecnico's Computering engineering course after high school. On my third year I converted an exam into 
+          an internship of 3 months which I completed in Codd&Date. At the end of it I was offered a job and I decided to prioritize my 
+          working experience over my studies. Due to that I've never completed my last bachelor exams, but I'm fine with it:
+          these 3 years were crucial to understand what I wanted from my career and I see those as a fundamental step for my 
+          growth and who I am now.
       - layout: left
         title: Liceo scientifico Vittorio Veneto
         caption: 2005 - 2010
@@ -203,7 +203,7 @@ content:
       > If you feel like you're the dumbest person in the room, you're in the correct room.
 
       The above one is one of my favorite mantra: I love to sorround myself with smart and motivated people because it's always a learning and 
-      humbling experience at the same time. This is exaclty what's happening in TrueLayer, where we created an amazing movement and an extremely ambitious mission which is 
+      humbling experience at the same time. This is exactly what's happening in TrueLayer, where we created an amazing movement and an extremely ambitious mission which is 
       _Opening up finance_, i.e. streamlining access to banking data and payments. 
       
       As mentioned in my intro I'm not scared at all by learning new languages or skills in general as long I can see motivation and commitment around me. 
@@ -212,7 +212,7 @@ content:
       In addition to what I do for TrueLayer I like taking care of extra projects in my extra time. I try to work on open source projects 
       whenever I can - some of my contributions are available on my Github profile.
       Time permitting I enjoy collaborating with small startups. <a href="https://easyfeel.it/" target="_blank">Easyfeel</a> and <a href="https://www.empethy.it/" target="_blank">Empethy</a> are the latest ones
-      I helped on either cloud infrastructure optimizations or with technical consultancy in general.
+      I helped.
 
       When I'm not using my laptop I like cooking and doing sports, football, padel, ski and workouts being my favourites.
       I love living my city spaces either on my own or along with friends: cinema, parks, pubs, wineries and restaurants.

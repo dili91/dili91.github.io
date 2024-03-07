@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  
+<title>Fooled by Prometheus rate function | Andrea Di Lisio</title>
+
+
+
+<meta property="og:title" content="Fooled by Prometheus rate function">
+
+
+
+<meta name="author" content="Andrea Di Lisio">
+
+
+<meta property="og:locale" content="en-US">
+
+
+<meta name="description" content="Andrea Di Lisio&#x27;s online resume and blog">
+<meta property="og:description" content="Andrea Di Lisio&#x27;s online resume and blog">
+
+
+
+<link rel="canonical" href="https://adilisio.com/posts/fooled-by-prometheus-rate-function/">
+<meta property="og:url" content="https://adilisio.com/posts/fooled-by-prometheus-rate-function/">
+
+
+
+<meta property="og:site_name" content="Andrea Di Lisio" />
+
+
+
+
+
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2022-11-21T00:00:00+00:00">
+
+
+
+  <link rel="prev" href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/">
+
+
+
+  <link rel="next" href="https://adilisio.com/posts/hello-world/">
+
+
+
+  <meta name="twitter:card" content="summary">
+
+
+
+  <meta property="twitter:title" content="Fooled by Prometheus rate function">
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+{
+  "author": {
+    "@type":"Person",
+	  "name":"Andrea Di Lisio",
+  },
+  "description": "Andrea Di Lisio&#x27;s online resume and blog",
+  "url": "https://adilisio.com/posts/fooled-by-prometheus-rate-function/",
+  "@context":"https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Fooled by Prometheus rate function"
+  
+    
+    
+      "datePublished":"2022-11-21T00:00:00+00:00",
+    
+    "mainEntityOfPage":{
+      "@type":"WebPage",
+      "@id":"https://adilisio.com/posts/fooled-by-prometheus-rate-function/"
+    },
+  
+}
+</script>
+
+  
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="https://adilisio.com/rss.xml">
+  
+
+  <link rel="stylesheet" href="https://adilisio.com/main.css">
+  <link rel="stylesheet" href="https://adilisio.com/custom.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Libre+Baskerville:400,400i,700">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="https://adilisio.com/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://adilisio.com/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://adilisio.com/assets/apple-touch-icon.png">
+
+  
+    <link type="application/atom+xml" rel="alternate" href="https://adilisio.com/rss.xml" title="Andrea Di Lisio" />
+  
+
+  
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2G3RGMKL8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D2G3RGMKL8');
+    </script>
+  
+
+  
+  
+</head>
+
+<body>
+  
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="https://adilisio.com/">
+        <h2 class="nav-title">Andrea Di Lisio</h2>
+      </a>
+      <ul>
+        <li><a href="https://adilisio.com/">Resume</a></li>
+        <li><a href="https://adilisio.com/posts">Posts</a></li>
+        <li><a target="_blank" href="https://github.com/dili91">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+
+  <main>
+    
+  <div class="post">
+  	<div class="post-info">
+  		<span>Written by</span> Andrea Di Lisio<br>
+  		<span>on&nbsp;</span><time datetime="2022-11-21">November 21, 2022</time>
+  	</div>
+  	<h1 class="post-title">Fooled by Prometheus rate function</h1>
+  	<div class="post-line"></div>
+  	<p>A couple of weeks ago I had to deal with an incident that affected one of the services that my team owns at my job.</p>
+<p>It was a minor issue that manifested with a bunch of internal dependency errors thrown by our gRPC internal endpoints. The origin of those errors was a regression introduced by one of our service dependencies, promptly solved by reverting a couple of PRs.</p>
+<p>What really got me thinking and inspired further actions (including this blog post), was our availability board on Grafana: </p>
+<br>
+<p><img src="/assets/images/posts/2022-11-22_fooled-by-prometheus-rate-function/grpc_sli.png" alt="gRPC SLI" /></p>
+<br>
+<p>Unexpectedly, our Service level indicators (SLI), inspired to <a href="https://cloud.google.com/blog/products/devops-sre/sre-fundamentals-slis-slas-and-slos">the ones defined by Google SREs</a>, showed <em>all good</em> during the incident time window. </p>
+<p>At first I thought of a blip on our Prometheus queries. Our service is relatively new and these kind of issues it's not so uncommon. 
+Further investigations though showed different results. </p>
+<p>Let's put our error rates under the microscope.</p>
+<h1 id="error-rates-explained">Error rates explained</h1>
+<p>This is how an error rate more or less looks like:</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#8fa1b3;">sum</span><span>(</span><span style="color:#8fa1b3;">rate</span><span>(</span><span style="color:#bf616a;">grpc_server_sli_total</span><span>{</span><span style="color:#bf616a;">service</span><span>=&quot;</span><span style="color:#a3be8c;">foo</span><span>&quot;, sli_error_type!=&quot;&quot;}[1</span><span style="color:#bf616a;">m</span><span>]))
+</span></code></pre>
+<p>The main concepts to grasp here are: </p>
+<ul>
+<li>the metric identifier, <code>grpc_server_sli_total</code> in this case. As the name suggests, it refers to gRPC requests handled by our service. What's included in graph brackets are additional filters to narrow our focus on what really interests us. In this particular case we want to get non successful gRPC requests handled by our service named <em>foo</em>;</li>
+<li>The <code>rate</code> function is used to compute the increase of errors, rather than ever-growing counters, along with its time interval selection of 1 minute. More on <a href="https://adilisio.com/posts/fooled-by-prometheus-rate-function/#prometheus-rate-function">the next chapter</a>;</li>
+<li>We aggregate samples produced by different instances of our service <em>foo</em> with the help of the <code>sum</code> function. If you're familiar with Kubernetes, this will help you merging results produced by different pods belonging to the same deployment.</li>
+</ul>
+<h1 id="prometheus-rate-function">Prometheus <code>rate</code> function</h1>
+<p>From <a href="https://prometheus.io/docs/prometheus/latest/querying/functions/#rate">Prometheus docs</a>, the <code>rate</code> function</p>
+<blockquote>
+<p>calculates the per-second average rate of increase of the time series in the range vector.</p>
+</blockquote>
+<br>
+<p><img src="https://media.giphy.com/media/jpbnkneOMU9UeXXCfd/giphy.gif" alt="Thinking" /></p>
+<br>
+<p>Okay. what’s a <em>range vector</em>, then ? </p>
+<blockquote>
+<p>a set of time series containing a range of data points over time for each time series.</p>
+</blockquote>
+<p>Unlike instant vectors, range vectors are represented with a list of results, belonging to a specific time interval. We get a range vector with the help of selectors made of the <mark>metric identifier + the interval</mark> in which we want to look for:
+<br></p>
+<p><img src="/assets/images/posts/2022-11-22_fooled-by-prometheus-rate-function/range_vector_selector.png" alt="Range vector selector" /></p>
+<br>
+<p>When I first stumbled across the time interval, I got a bit confused by that. What’s the best value to use ? 
+How does that cope with the time interval usually selected on tools like in Grafana ? </p>
+<br>
+<p><img src="/assets/images/posts/2022-11-22_fooled-by-prometheus-rate-function/grafana_window.png" alt="Grafana time selector" /></p>
+<br>
+<p>After a bit of research, I found out that the accepted best practice seems to be <a href="https://www.robustperception.io/what-range-should-i-use-with-rate/">at least 4X times the scrape interval</a>, to be resilient with failed scrapes.</p>
+<p>If you use Grafana, as of version 7.2, there's dynamic <code>$__rate_interval</code> variable that should help with that.</p>
+<h2 id="a-very-important-detail">A very important detail</h2>
+<p>A very key bit to remember about the rate function is that <mark>it works properly with at least 2 samples of your metric: the increase from <em>null</em> to <em>something</em> is 0!</mark> This means that the rate function
+doesn't play well with counters that are not initialized to 0.</p>
+<h1 id="the-problem-with-uninitialized-counters">The problem with uninitialized counters</h1>
+<p>This is exactly the reason why our boards shown at the beginning of this blog post were so green. We don't initialize error counters to 0 at service startup time, but
+we increment those counters to 1 (and more) as failed requests happen. Below is how one of our produced error metric looks like: </p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span>...
+</span><span style="color:#bf616a;">grpc_server_sli_total</span><span>{</span><span style="color:#bf616a;">service</span><span>=&quot;</span><span style="color:#a3be8c;">foo</span><span>&quot;, </span><span style="color:#bf616a;">grpc_method</span><span>=&quot;</span><span style="color:#a3be8c;">CreateVRPMandate</span><span>&quot;, </span><span style="color:#bf616a;">sli_error_type</span><span>=&quot;</span><span style="color:#a3be8c;">internal_dependency_error</span><span>&quot;, </span><span style="color:#bf616a;">sli_dependency_name</span><span>=&quot;</span><span style="color:#a3be8c;">ob_connector</span><span>&quot;}
+</span><span>...
+</span></code></pre>
+<p>This is potentially a problem in 2 scenarios, mostly: </p>
+<ol>
+<li>New services shipped to production, still with low traffic</li>
+<li>Whenever a new version of a service is released</li>
+</ol>
+<p>Services with low traffic are mostly impacted by this because more time is required to initialize error counters. Those are also circumstances where even a very low amount of error 
+is non negligible at all. </p>
+<p>The second scenario is probably more interesting for a broader set of service. To be precise, it does manifest not just during planned new releases rollouts but also 
+during regular service instances rotation. This is a typical scenario in a Kubernetes cluster: whenever k8s decides to shutdown one of your pod because it's consuming too much resources for instance, you might encounter error counters blips.</p>
+<p>Below a few screenshots showing the impact of a new service release (<code>v9.3.59</code>) on error counters of type <code>internal_dependency_error</code>.</p>
+<p>At ~18:20 we can see new release kicking in:
+<br></p>
+<p><img src="/assets/images/posts/2022-11-22_fooled-by-prometheus-rate-function/service_release.png" alt="Release" /></p>
+<p>Below screenshot shows how that impacted the <code>rate</code> of errors value (the thin green line). We can see how that
+changes right before and after the release moment. Moreover, we can see how we had to wait 3.5 hours to see the first <code>internal_dependency_error</code> impacting again our computed error rate.</p>
+<p><img src="/assets/images/posts/2022-11-22_fooled-by-prometheus-rate-function/rate_drops.png" alt="Rate drops" /></p>
+<p>Finally, a view on error counters in isolation. We can see how each counter got reset as soon as the new pods replaced the old ones belonging to deployment <code>v9.3.58</code>.
+At ~20:15 is also clear how the <code>sum</code> function is not really of great help in case of counters updated on different pods. Whilst we got 2 appearances of error at that time, since they happened on different pods, each pod individual rate is 0 and so their sum is also 0.</p>
+<p><img src="/assets/images/posts/2022-11-22_fooled-by-prometheus-rate-function/error_counters.png" alt="Error counters" /></p>
+<h1 id="potential-solutions-and-key-takeaways">Potential solutions and key takeaways</h1>
+<p>The correctness of the rate function is a quite largely debated topic by the online community. In the context of my investigation I also stumbled across this <a href="https://github.com/prometheus/prometheus/issues/3806">5 years old open proposal</a> on the Prometheus repository that, if implemented, would actually solve all the headaches. </p>
+<p>The most reliable and suggested advice I've found is to initialize your counters to 0. As simple as that!</p>
+<p>That said, this might not be the easiest thing to do in your service. Often times gRPC/HTTP requests counters are updated with the help of stateless middlewares, as soon as those requests are handled by your service. Whilst this is very nice from the perspective of separation of concerns and helps not poisoning your business domain logic with monitoring related tasks, at the same time it makes initialization tasks like the one mentioned above a bit harder to implement.</p>
+<p>Depending on the specific scenario, you might think of trading a bit of readability and maintainability of your solution with an improved correctness of your metrics. </p>
+<p>Last but not least, it's also worth considering what's the ultimate use of your metrics: if you don't plan to wake somebody up at night for a couple of requests spoiling the rightmost decimals of your SLI indicators, then to lose a bunch data points is probably totally fine. </p>
+
+  </div>
+
+	
+
+  <div class="pagination">
+  	<a href="https://adilisio.com/posts/hello-world/" class="left arrow">&#8592;</a>
+		<a href="#" class="top">Top</a>
+		<a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/" class="right arrow">&#8594;</a>
+  </div>
+
+  </main>
+
+  
+  <footer>
+    <span></span>
+  </footer>
+  
+</body>
+</html>

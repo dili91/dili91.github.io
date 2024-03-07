@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  
+<title>Sequentially starting containers in a Kubernetes pod | Andrea Di Lisio</title>
+
+
+
+<meta property="og:title" content="Sequentially starting containers in a Kubernetes pod">
+
+
+
+<meta name="author" content="ChatGPT on behalf of Andrea Di Lisio">
+
+
+<meta property="og:locale" content="en-US">
+
+
+<meta name="description" content="Andrea Di Lisio&#x27;s online resume and blog">
+<meta property="og:description" content="Andrea Di Lisio&#x27;s online resume and blog">
+
+
+
+<link rel="canonical" href="https://adilisio.com/posts/sequentially-starting-containers-in-a-kubernetes-pod/">
+<meta property="og:url" content="https://adilisio.com/posts/sequentially-starting-containers-in-a-kubernetes-pod/">
+
+
+
+<meta property="og:site_name" content="Andrea Di Lisio" />
+
+
+
+
+
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2023-03-19T00:00:00+00:00">
+
+
+
+  <link rel="prev" href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/">
+
+
+
+  <link rel="next" href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/">
+
+
+
+  <meta name="twitter:card" content="summary">
+
+
+
+  <meta property="twitter:title" content="Sequentially starting containers in a Kubernetes pod">
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+{
+  "author": {
+    "@type":"Person",
+	  "name":"ChatGPT on behalf of Andrea Di Lisio",
+  },
+  "description": "Andrea Di Lisio&#x27;s online resume and blog",
+  "url": "https://adilisio.com/posts/sequentially-starting-containers-in-a-kubernetes-pod/",
+  "@context":"https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Sequentially starting containers in a Kubernetes pod"
+  
+    
+    
+      "datePublished":"2023-03-19T00:00:00+00:00",
+    
+    "mainEntityOfPage":{
+      "@type":"WebPage",
+      "@id":"https://adilisio.com/posts/sequentially-starting-containers-in-a-kubernetes-pod/"
+    },
+  
+}
+</script>
+
+  
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="https://adilisio.com/rss.xml">
+  
+
+  <link rel="stylesheet" href="https://adilisio.com/main.css">
+  <link rel="stylesheet" href="https://adilisio.com/custom.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Libre+Baskerville:400,400i,700">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="https://adilisio.com/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://adilisio.com/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://adilisio.com/assets/apple-touch-icon.png">
+
+  
+    <link type="application/atom+xml" rel="alternate" href="https://adilisio.com/rss.xml" title="Andrea Di Lisio" />
+  
+
+  
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2G3RGMKL8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D2G3RGMKL8');
+    </script>
+  
+
+  
+  
+</head>
+
+<body>
+  
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="https://adilisio.com/">
+        <h2 class="nav-title">Andrea Di Lisio</h2>
+      </a>
+      <ul>
+        <li><a href="https://adilisio.com/">Resume</a></li>
+        <li><a href="https://adilisio.com/posts">Posts</a></li>
+        <li><a target="_blank" href="https://github.com/dili91">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+
+  <main>
+    
+  <div class="post">
+  	<div class="post-info">
+  		<span>Written by</span> ChatGPT on behalf of Andrea Di Lisio<br>
+  		
+  		<span>on&nbsp;</span><time datetime="2023-03-19">March 19, 2023</time>
+  	</div>
+  	<h1 class="post-title">Sequentially starting containers in a Kubernetes pod</h1>
+  	<div class="post-line"></div>
+  	<p><img src="/assets/images/posts/2023-03-19_sequentially_starting_containers_in_a_kubernetes_pod/kubernetes.jpg" alt="Kubernetes" />
+<br/></p>
+<p>When running multiple Docker containers in a Kubernetes pod, it's important to start them in the correct order to avoid any potential issues or downtime. One way to achieve this is by using Kubernetes' <code>postStart</code> hooks. In this blog post, we'll explore how to use <code>postStart</code> hooks to sequentially start Docker containers in a Kubernetes pod.</p>
+<h2 id="the-containers">The Containers</h2>
+<p>Let's assume we have three Docker containers: <code>db</code>, <code>api</code>, and <code>worker</code>. The <code>db</code> container is responsible for running the database, <code>api</code> is responsible for serving the API endpoints, and <code>worker</code> is responsible for running background tasks.</p>
+<h2 id="the-pod-definition">The Pod Definition</h2>
+<p>To start these containers sequentially, we'll create a Kubernetes pod definition with <code>initContainers</code> and <code>postStart</code> hooks. The <code>initContainers</code> section will ensure that the <code>db</code> container starts up and initializes the database before the other containers are started. The <code>postStart</code> hook for the <code>api</code> container will ensure that the <code>worker</code> container only starts once the API is available.</p>
+<p>Here's an example of what the pod definition might look like:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">apiVersion</span><span>: </span><span style="color:#a3be8c;">v1
+</span><span style="color:#bf616a;">kind</span><span>: </span><span style="color:#a3be8c;">Pod
+</span><span style="color:#bf616a;">metadata</span><span>:
+</span><span>  </span><span style="color:#bf616a;">name</span><span>: </span><span style="color:#a3be8c;">my-app
+</span><span style="color:#bf616a;">spec</span><span>:
+</span><span>  </span><span style="color:#bf616a;">initContainers</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">name</span><span>: </span><span style="color:#a3be8c;">db
+</span><span>    </span><span style="color:#bf616a;">image</span><span>: </span><span style="color:#a3be8c;">my-db-image
+</span><span>    </span><span style="color:#bf616a;">command</span><span>: [&#39;</span><span style="color:#a3be8c;">bash</span><span>&#39;, &#39;</span><span style="color:#a3be8c;">-c</span><span>&#39;, &#39;</span><span style="color:#a3be8c;">echo &quot;Starting database...&quot; &amp;&amp; sleep 5</span><span>&#39;]
+</span><span>  </span><span style="color:#bf616a;">containers</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">name</span><span>: </span><span style="color:#a3be8c;">api
+</span><span>    </span><span style="color:#bf616a;">image</span><span>: </span><span style="color:#a3be8c;">my-api-image
+</span><span>    </span><span style="color:#bf616a;">command</span><span>: [&#39;</span><span style="color:#a3be8c;">bash</span><span>&#39;, &#39;</span><span style="color:#a3be8c;">-c</span><span>&#39;, &#39;</span><span style="color:#a3be8c;">echo &quot;Starting API...&quot; &amp;&amp; sleep 5</span><span>&#39;]
+</span><span>    </span><span style="color:#bf616a;">ports</span><span>:
+</span><span>    - </span><span style="color:#bf616a;">containerPort</span><span>: </span><span style="color:#d08770;">8080
+</span><span>    </span><span style="color:#bf616a;">readinessProbe</span><span>:
+</span><span>      </span><span style="color:#bf616a;">httpGet</span><span>:
+</span><span>        </span><span style="color:#bf616a;">path</span><span>: </span><span style="color:#a3be8c;">/healthz
+</span><span>        </span><span style="color:#bf616a;">port</span><span>: </span><span style="color:#d08770;">8080
+</span><span>    </span><span style="color:#bf616a;">lifecycle</span><span>:
+</span><span>      </span><span style="color:#bf616a;">postStart</span><span>:
+</span><span>        </span><span style="color:#bf616a;">exec</span><span>:
+</span><span>          </span><span style="color:#bf616a;">command</span><span>: [&#39;</span><span style="color:#a3be8c;">bash</span><span>&#39;, &#39;</span><span style="color:#a3be8c;">-c</span><span>&#39;, &#39;</span><span style="color:#a3be8c;">until $(curl --output /dev/null --silent --head --fail http://localhost:8080/healthz); do echo &quot;Waiting for API...&quot; &amp;&amp; sleep 1; done</span><span>&#39;]
+</span><span>  - </span><span style="color:#bf616a;">name</span><span>: </span><span style="color:#a3be8c;">worker
+</span><span>    </span><span style="color:#bf616a;">image</span><span>: </span><span style="color:#a3be8c;">my-worker-image
+</span><span>    </span><span style="color:#bf616a;">command</span><span>: [&#39;</span><span style="color:#a3be8c;">bash</span><span>&#39;, &#39;</span><span style="color:#a3be8c;">-c</span><span>&#39;, &#39;</span><span style="color:#a3be8c;">echo &quot;Starting worker...&quot; &amp;&amp; sleep 5</span><span>&#39;]
+</span></code></pre>
+<h2 id="how-it-works">How it Works</h2>
+<p>In the above pod definition, the <code>db</code> container will start first and initialize the database. Once the database is up and running, the <code>api</code> container will start and wait until its <code>readinessProbe</code> endpoint returns a successful response. Finally, the <code>worker</code> container will start and wait until the API is available before running any background tasks.</p>
+<p>The <code>postStart</code> hook for the <code>api</code> container uses a command that sends a curl request to the API's <code>readinessProbe</code> endpoint. It will keep retrying until it receives a successful response, indicating that the API is ready to handle requests. This ensures that the <code>worker</code> container only starts once the API is available.</p>
+<p>By using <code>postStart</code> hooks, we can ensure that our Docker containers start up in the correct order and avoid any potential issues or downtime in our Kubernetes environment.</p>
+
+  </div>
+
+	
+
+  <div class="pagination">
+  	<a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/" class="left arrow">&#8592;</a>
+		<a href="#" class="top">Top</a>
+		<a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/" class="right arrow">&#8594;</a>
+  </div>
+
+  </main>
+
+  
+  <footer>
+    <span></span>
+  </footer>
+  
+</body>
+</html>

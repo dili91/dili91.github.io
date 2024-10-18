@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  
+<title>Elevate your Prometheus alerts with the help of unit tests | Andrea Di Lisio</title>
+
+
+
+<meta property="og:title" content="Elevate your Prometheus alerts with the help of unit tests">
+
+
+
+<meta name="author" content="Andrea Di Lisio">
+
+
+<meta property="og:locale" content="en-US">
+
+
+<meta name="description" content="Get the best out of your Prometheus alerts with unit tests">
+<meta property="og:description" content="Get the best out of your Prometheus alerts with unit tests">
+
+
+
+<link rel="canonical" href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/">
+<meta property="og:url" content="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/">
+
+
+
+<meta property="og:site_name" content="Andrea Di Lisio" />
+
+
+
+
+
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2023-10-06T00:00:00+00:00">
+
+
+
+  <link rel="prev" href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/">
+
+
+
+  <link rel="next" href="https://adilisio.com/posts/sequentially-starting-containers-in-a-kubernetes-pod/">
+
+
+
+  <meta name="twitter:card" content="summary">
+
+
+
+  <meta property="twitter:title" content="Elevate your Prometheus alerts with the help of unit tests">
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+{
+  "author": {
+    "@type":"Person",
+	  "name":"Andrea Di Lisio",
+  },
+  "description": "Get the best out of your Prometheus alerts with unit tests",
+  "url": "https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/",
+  "@context":"https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Elevate your Prometheus alerts with the help of unit tests"
+  
+    
+    
+      "datePublished":"2023-10-06T00:00:00+00:00",
+    
+    "mainEntityOfPage":{
+      "@type":"WebPage",
+      "@id":"https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/"
+    },
+  
+}
+</script>
+
+  
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="https://adilisio.com/rss.xml">
+  
+
+  <link rel="stylesheet" href="https://adilisio.com/main.css">
+  <link rel="stylesheet" href="https://adilisio.com/custom.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Libre+Baskerville:400,400i,700">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="https://adilisio.com/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://adilisio.com/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://adilisio.com/assets/apple-touch-icon.png">
+
+  
+    <link type="application/atom+xml" rel="alternate" href="https://adilisio.com/rss.xml" title="Andrea Di Lisio" />
+  
+
+  
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2G3RGMKL8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D2G3RGMKL8');
+    </script>
+  
+
+  
+  
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+	integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq" crossorigin="anonymous">
+	<script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+	integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz" crossorigin="anonymous"></script>
+	<script defer src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+	integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI" crossorigin="anonymous"
+	onload="renderMathInElement(document.body);"></script>
+
+</head>
+
+<body>
+  
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="https://adilisio.com/">
+        <h2 class="nav-title">Andrea Di Lisio</h2>
+      </a>
+      <ul>
+        <li><a href="https://adilisio.com/">Resume</a></li>
+        <li><a href="https://adilisio.com/posts">Posts</a></li>
+        <li><a target="_blank" href="https://github.com/dili91">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+
+  <main>
+    
+  <div class="post">
+  	<div class="post-info">
+  		<span>Written by</span> Andrea Di Lisio<br>
+  		
+  		<span>on&nbsp;</span><time datetime="2023-10-06">October  6, 2023</time>
+  	</div>
+  	<h1 class="post-title">Elevate your Prometheus alerts with the help of unit tests</h1>
+  	<div class="post-line"></div>
+  	<p><img src="/assets/images/posts/2023-10-06_elevate_your_prometheus_alerts_with_the_help_of_unit_tests/peace.jpg" alt="Peace of mind" />
+<br/></p>
+<!-- no toc -->
+<h1 id="table-of-contents">Table of contents <!-- omit in toc --></h1>
+<ul>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#introduction">Introduction</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#what-is-an-alert">What is an alert?</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#how-can-you-test-it">How can you test it?</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#what-about-unit-testing">What about unit testing?</a>
+<ul>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#a-basic-example">A basic example</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#errors-increase-for-multiple-service-instances">Errors increase for multiple service instances</a>
+<ul>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#introducing-an-alert-duration-for-higher-precision">Introducing an alert duration for higher precision</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#side-effects-of-using-a-duration">Side effects of using a duration</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#alert-on-slos-with-missing-scrapes">Alert on SLOs with missing scrapes</a>
+<ul>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#our-availability-definition">Our availability definition</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#first-attempt">First attempt</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#missing-scrapes">Missing scrapes</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#different-policies-depending-on-the-time-of-the-day">Different policies depending on the time of the day</a>
+<ul>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#alert-definition">Alert definition</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#test-the-different-in-and-off-hours-policies">Test the different in and off-hours policies</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#key-takeaways-and-unsolved-problems">Key takeaways and unsolved problems</a></li>
+<li><a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/#additional-resources">Additional resources</a></li>
+</ul>
+<h1 id="introduction">Introduction</h1>
+<p>Monitoring services and reacting to outages promptly is crucial for online success.</p>
+<p>If your company offers online services you can’t afford not being operationally excellent: your service being down for minutes (sometimes just seconds!) can create non-negligible damage to your customers and sometimes severely impact your reputation and trust. What <em>excellent</em> means might vary a lot, depending on the use case, the scale of your company, the maturity of your products, and your agreed SLAs, but the point is that if one of your systems experiences an outage, you’re expected to be the first to know about it, to inform your customers while the incident is still ongoing, solve the issues (as soon as possible) and last but not least share a detailed report including what happened and what measures you have put in place to prevent that from happening again in future.</p>
+<figure>
+  <img src="/assets/images/posts/2023-10-06_elevate_your_prometheus_alerts_with_the_help_of_unit_tests/operational_excellence.png" alt="Operational excellence">
+  <figcaption>Usual steps involved in an incident management process</figcaption>
+</figure>
+<p>Even if you are a company like Google, with the best software architectures and a pool of incredibly skilled engineers, it's important to recognize that failures can still occur. It's crucial to be well-prepared for such scenarios and not overlook the possibility of them happening.</p>
+<p>The prerequisite to meet the above expectations is to leverage a monitoring and alerting system that gives you the power to decide what metrics are really relevant for your systems/services health and how to alert if bad symptoms show up. That said, even the most powerful monitoring tool is practically useless if you don’t ingest the relevant service metrics and don’t define top-quality alerts. </p>
+<p>What I’ll talk about here mostly relates to the <em>Monitor</em> and <em>Identity</em> steps depicted in the above drawing, and it is specific to the <a href="https://prometheus.io/">Prometheus</a> monitoring system, which I had the chance to work with during the last years, other than being one of the most adopted open-source solutions for monitoring purposes.</p>
+<p>Testing that your alerting works end-to-end is fairly complicated, considering the many components <a href="https://prometheus.io/docs/introduction/overview/#architecture">usually involved in an alerting system</a>, and as such a little too much for this article.</p>
+<p>Here I’ll focus on how to write better alerts for your systems with the help of unit tests.</p>
+<h1 id="what-is-an-alert">What is an alert?</h1>
+<p>An alert is a condition that when met should trigger some sort of action in your systems. You can define an alert in Prometheus with the help of an <em>alerting rule</em>:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">rules</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">alert</span><span>: </span><span style="color:#a3be8c;">InternalServerErrors
+</span><span>    </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#a3be8c;">http_requests_total{service=&quot;payments-api&quot;, status=&quot;500&quot;} &gt; 0
+</span><span>    </span><span style="color:#bf616a;">labels</span><span>:
+</span><span>      </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span><span>    </span><span style="color:#bf616a;">annotations</span><span>:
+</span><span>      </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">There have been internal server errors in the last minutes!</span><span>&quot;
+</span><span>      </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://my-playbook.com/500-what-to-check</span><span>&quot;
+</span></code></pre>
+<p>The key components of an alert in Prometheus are:</p>
+<ul>
+<li>An <strong>expression</strong> written in PromQL language, defined on a metric, which describes the condition under which the alert should fire</li>
+<li>A <strong>severity</strong> indicator, representing how bad the specific alert is and what urgency of action requires</li>
+<li><strong>Context</strong> information, useful for troubleshooting purposes and ease of readability. You can even define custom annotations to include your team’s runbooks!</li>
+<li>Optionally, a <strong>duration</strong> clause describing how long to wait before treating what’s defined in the expression as an actual alert (not present in the above example)</li>
+</ul>
+<p>In the above example, we are asking Prometheus to send an alert whenever a <code>500</code> HTTP status code is returned by any of the endpoints exposed by our <code>payments-api</code> service. </p>
+<p>Note that the above example is deliberately oversimplified: usually, we’re interested in error rates/increases, coming from multiple instances of our service. We’ll see later in this article a more realistic sample using the <a href="https://prometheus.io/docs/prometheus/latest/querying/functions/#rate">rate</a> function and <a href="https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators">sum</a> operator offered by Prometheus.</p>
+<h1 id="how-can-you-test-it">How can you test it?</h1>
+<p>Once we have defined our alert, how can we double-check our expectations before shipping that to production and having to wait for real issues? Is there a way to verify that our alert will fire when our condition is met, and only in that case?  In other words, can we check if our alert will notify us when an issue is there and at the same time won’t piss people off by being too noisy during an off-hour on-call shift?</p>
+<p>Of course, we can. </p>
+<p>A naive approach could be to release your alert in your test environment and alter the responses of your services so that we can hit the alert condition (the <code>payments-api</code> in our previous example). Such a test helps you get confidence about your alerting system as a whole because you would have a chance to test not just the alert per se, but its routing which is a crucial thing for the quality of your on-call support. </p>
+<p>The biggest drawback of this approach is that oftentimes is time-consuming:</p>
+<ul>
+<li>You might have to release a temporary code change on your services to return an altered response just to meet your alert criteria;</li>
+<li>Depending on the alert you might need to prepare some sort of load testing;</li>
+<li>if you’re in a team of a few engineers all working on the same services you have to pause releases in your development/test environment until you’re done with your tests;</li>
+<li>You could end up wasting a significant amount of time because one of <a href="https://prometheus.io/docs/introduction/overview/#architecture">the many components</a> of your alerting stack works slightly differently from your live environment, or does not work at all in development.</li>
+</ul>
+<p>Sometimes this approach is not applicable either, because your alerting system is fully working only in production (usually not a good idea).</p>
+<p>Another approach could be to slightly tweak your alert expression to easily meet the alert condition while developing and testing, and change it back to the final value before releasing it to production. This is surely easier than the first option presented, but at the end of the day you’re not really testing your alert in its final version.</p>
+<h1 id="what-about-unit-testing">What about unit testing?</h1>
+<p>It turns out there is a smarter and funnier option when you want to simply test your alerting rule, and that is offered by Prometheus itself: you can unit test your alert with the help of the <a href="https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/">promtool</a> CLI and an additional YAML file where you can define simulated events (time series) and your assertions.</p>
+<h2 id="a-basic-example">A basic example</h2>
+<p>A basic alert test file looks like the following:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">rule_files</span><span>:
+</span><span>  - </span><span style="color:#a3be8c;">./alerts.yaml </span><span style="color:#65737e;"># The YAML resource containing your alerting rule(s)
+</span><span>
+</span><span style="color:#65737e;"># An array of tests, where you can define multiple tests for one or more 
+</span><span style="color:#65737e;"># alerting rules
+</span><span style="color:#bf616a;">tests</span><span>: 
+</span><span>  </span><span style="color:#65737e;"># Each element is a specific test 
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: </span><span style="color:#a3be8c;">1m </span><span style="color:#65737e;"># this one defines the interval each value of below time series
+</span><span>    </span><span style="color:#bf616a;">input_series</span><span>:
+</span><span>      </span><span style="color:#65737e;"># The simulated metrics that will trigger our alert. In this case we&#39;re simulating 500 errors
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_requests_total{service=&quot;payments-api&quot;, status=&quot;500&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># This means that we&#39;ll start with 0 errors, 1 at the first minute, and then 0 again on the second
+</span><span>        </span><span style="color:#65737e;"># Note that the distance between values here is defined by the above interval
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">0 1 0 
+</span><span>    </span><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>      </span><span style="color:#65737e;"># Here we define our expectations for the alert depending on the time our 
+</span><span>      </span><span style="color:#65737e;"># rule is evaluated. 
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">1m 
+</span><span>        </span><span style="color:#65737e;"># What we expect to happen at the first minute. This lines up
+</span><span>        </span><span style="color:#65737e;"># with the first 1 in the values above
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">InternalServerErrors </span><span style="color:#65737e;"># The name of the rule we&#39;re evaluating
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>: </span><span style="color:#65737e;"># What/if alerts are expected
+</span><span>          </span><span style="color:#65737e;"># At the first minute we expect 1 alert to be triggered with below details
+</span><span>          - </span><span style="color:#bf616a;">exp_labels</span><span>:
+</span><span>              </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span><span>              </span><span style="color:#bf616a;">service</span><span>: </span><span style="color:#a3be8c;">payments-api
+</span><span>              </span><span style="color:#bf616a;">status</span><span>: </span><span style="color:#d08770;">500
+</span><span>            </span><span style="color:#bf616a;">exp_annotations</span><span>:
+</span><span>              </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">There have been internal server errors in the last minutes!</span><span>&quot;
+</span><span>              </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://my-playbook.com/500-what-to-check</span><span>&quot;
+</span><span>
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">2m </span><span style="color:#65737e;"># What we expect to happen at the second minute
+</span><span>        </span><span style="color:#65737e;"># We do not expect alerts here, as the errors are reset to 0
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">InternalServerErrors
+</span></code></pre>
+<p>With the help of a similar resource, you can define one or more assertions on one or multiple alerts. As you can see, you can verify that your alerts not only fire but also reset as expected! Moreover, you can test that the contextual information matches your team's needs during on-call shifts.</p>
+<p>The above test sample and the related alert are oversimplified, as mentioned. Let’s see how unit tests can even help us more with increasingly complex (and more realistic!) alerting rules.</p>
+<h2 id="errors-increase-for-multiple-service-instances">Errors increase for multiple service instances</h2>
+<p>In the previous example, we defined an alert on a simple counter, namely <code>http_requests_total</code>. The problem is that <a href="https://prometheus.io/docs/concepts/metric_types/#counter">counters</a> are ever-growing metrics, and they are usually reset when your application restarts. Counters per se are probably not really useful to check the <em>current</em> number of errors returned by your service, a much better choice is to use them in combination with Prometheus’s <a href="https://prometheus.io/docs/prometheus/latest/querying/functions/#rate">rate function</a>, which helps you calculate the per-second average rate of increase of errors. Last but not least, you likely have multiple instances of your services running in parallels, therefore you’re probably interested in aggregating results and this is where the <a href="https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators">sum operator</a> comes to help: </p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span>- </span><span style="color:#bf616a;">alert</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpike
+</span><span>    </span><span style="color:#65737e;"># Alert if there&#39;s a spike of 401 errors &gt; 10%
+</span><span>    </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">      sum(rate(http_requests_total{service=&quot;payments-api&quot;, status=&quot;401&quot;}[2m])) /
+</span><span style="color:#a3be8c;">      sum(rate(http_requests_total{service=&quot;payments-api&quot;}[2m])) 
+</span><span style="color:#a3be8c;">      &gt; 0.1
+</span><span>    </span><span style="color:#bf616a;">labels</span><span>:
+</span><span>      </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">warning
+</span><span>    </span><span style="color:#bf616a;">annotations</span><span>:
+</span><span>      </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">There has been a spike of unauthorized requests in the last 2 minutes!</span><span>&quot;
+</span><span>      </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">        There has been a spike of unauthorized requests in the last 2 minutes!
+</span><span style="color:#a3be8c;">        Current value is {{ $value | humanizePercentage }}.
+</span><span>      </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/what-to-check-in-case-of-401-spikes</span><span>&quot;
+</span></code></pre>
+<p>With the above snippet, we’re telling Prometheus to send an alert whenever the 401 error increase (over the total of requests) in the last 2 minutes is higher than 10%.</p>
+<p>Let’s test this!</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">rule_files</span><span>:
+</span><span>  - </span><span style="color:#a3be8c;">./alerts.yaml
+</span><span>
+</span><span style="color:#bf616a;">tests</span><span>:
+</span><span>  </span><span style="color:#65737e;"># 2 minutes of requests growth without errors, then a first spike of errors at minute 2,
+</span><span>  </span><span style="color:#65737e;"># and then another one starting at minute 4 
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>    </span><span style="color:#bf616a;">input_series</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_requests_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, status=&quot;200&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 0 10 20 50 100 150
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">0+10x2 50+50x2
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_requests_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, status=&quot;401&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 0 0 3 3 20 20
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">0x1 3x1 20x2
+</span><span>    </span><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">1m </span><span style="color:#65737e;"># Note that 1m represents the second data point in the time series (10 requests, 0 401)
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpike
+</span><span>        </span><span style="color:#65737e;"># At minute 1, there haven&#39;t bee 401 errors yet. So we do not expect alerts.
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">2m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpike
+</span><span>        </span><span style="color:#65737e;"># At minute 2, we have a total of 23 requests, of which 3 are 401s, so the ratio is 13.04%.
+</span><span>        </span><span style="color:#65737e;"># as the time series start with 0 requests, this represents the actual rate computed by Prometheus.
+</span><span>        </span><span style="color:#65737e;"># Hence we expect a meaningful alert!
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">exp_labels</span><span>:
+</span><span>              </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">warning
+</span><span>            </span><span style="color:#bf616a;">exp_annotations</span><span>:
+</span><span>              </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">There has been a spike of unauthorized requests in the last 2 minutes!</span><span>&quot;
+</span><span>              </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">                There has been a spike of unauthorized requests in the last 2 minutes!
+</span><span style="color:#a3be8c;">                Current value is 13.04%.
+</span><span>              </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/what-to-check-in-case-of-401-spikes</span><span>&quot;
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">3m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpike
+</span><span>        </span><span style="color:#65737e;"># At minute 3, the instant values are 50 requests and 3 unauthorized errors. That said, since our rate function&#39;s
+</span><span>        </span><span style="color:#65737e;"># window is 2m, the actual values considered are 3-0=3 401 errors and a total of
+</span><span>        </span><span style="color:#65737e;"># 50-10-+3 = 43 requests. As the ratio is below our threshold, no alerts are expected this time.
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span></code></pre>
+<p>Check out the <a href="https://github.com/dili91/prometheus-rules-tests/blob/main/03.unauthorized_errors_increase/tests.yaml">entire test case</a> to see what happens when counters reset!</p>
+<h3 id="introducing-an-alert-duration-for-higher-precision">Introducing an alert duration for higher precision</h3>
+<p>On Prometheus, you can add a <a href="https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/#defining-alerting-rules">duration</a> parameter (<code>for</code> clause) to the alert condition to avoid alerts firing unless the value remains above the threshold defined for some time.</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span>- </span><span style="color:#bf616a;">alert</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpike
+</span><span>    </span><span style="color:#65737e;"># Alert if there&#39;s a spike of 401 errors &gt; 10
+</span><span>    </span><span style="color:#65737e;"># and it lasts for 5 minutes at least
+</span><span>    </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">      sum(rate(http_requests_total{service=&quot;payments-api&quot;, status=&quot;401&quot;}[2m])) /
+</span><span style="color:#a3be8c;">      sum(rate(http_requests_total{service=&quot;payments-api&quot;}[2m])) 
+</span><span style="color:#a3be8c;">      &gt; 0.1
+</span><span>    </span><span style="color:#bf616a;">for</span><span>: </span><span style="color:#a3be8c;">5m
+</span><span>    </span><span style="color:#bf616a;">labels</span><span>:
+</span><span>      </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">warning
+</span><span>    </span><span style="color:#bf616a;">annotations</span><span>:
+</span><span>      </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">There has been a spike of unauthorized requests in the last 5 minutes!</span><span>&quot;
+</span><span>      </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">        There has been a spike of unauthorized requests in the last 5 minutes!
+</span><span style="color:#a3be8c;">        Current value is {{ $value | humanizePercentage }}.
+</span><span>      </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/what-to-check-in-case-of-401-spikes</span><span>&quot;
+</span></code></pre>
+<p>The above example is almost identical to the previous one, the only difference is that it won’t fire unless the alert condition is true for at least 5 minutes. Duration is sometimes useful to improve alert precision: if you get paged, it's more likely that issues are persistent and require your focus, compared to the previous example which was subject to some level of brittleness:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">rule_files</span><span>:
+</span><span>  - </span><span style="color:#a3be8c;">./alerts.yaml
+</span><span>
+</span><span style="color:#bf616a;">tests</span><span>:
+</span><span>  </span><span style="color:#65737e;"># No errors during the first 2 minutes, then high rates of unauthorized requests for 10 minutes 
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>    </span><span style="color:#bf616a;">input_series</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_requests_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, status=&quot;200&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 0 10 20 50 100 150 200 250 300 350 400
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">0+10x2 50+50x7
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_requests_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, status=&quot;401&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 0 0 15 30 45 60 75 90 0 0 0
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">0x1 15+15x5 0x2
+</span><span>    </span><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpikeWithDuration
+</span><span>        </span><span style="color:#65737e;"># At minute 1, there haven&#39;t bee 401 errors yet. So we do not expect alerts.
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">5m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpikeWithDuration
+</span><span>        </span><span style="color:#65737e;"># At minute 5, the computed 401 increase over the request total is &gt;20%, but the increase of error 
+</span><span>        </span><span style="color:#65737e;"># only started 3 minutes before, so no alerts are expected
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">7m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpikeWithDuration
+</span><span>        </span><span style="color:#65737e;"># At minute 7, we have the same increase computed as minute 5 but this time the alert is on since 5 minutes, 
+</span><span>        </span><span style="color:#65737e;"># Therefore we actually expect an alert!
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">exp_labels</span><span>:
+</span><span>              </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">warning
+</span><span>            </span><span style="color:#bf616a;">exp_annotations</span><span>:
+</span><span>              </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">There has been a spike of unauthorized requests in the last 5 minutes!</span><span>&quot;
+</span><span>              </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">                There has been a spike of unauthorized requests in the last 5 minutes!
+</span><span style="color:#a3be8c;">                Current value is 23.08%.
+</span><span>              </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/what-to-check-in-case-of-401-spikes</span><span>&quot;
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">8m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpikeWithDuration
+</span><span>        </span><span style="color:#65737e;"># At minute 8, errors are decreasing but we still expect an alert
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">exp_labels</span><span>:
+</span><span>              </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">warning
+</span><span>            </span><span style="color:#bf616a;">exp_annotations</span><span>:
+</span><span>              </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">There has been a spike of unauthorized requests in the last 5 minutes!</span><span>&quot;
+</span><span>              </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">                There has been a spike of unauthorized requests in the last 5 minutes!
+</span><span style="color:#a3be8c;">                Current value is 13.04%.
+</span><span>              </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/what-to-check-in-case-of-401-spikes</span><span>&quot;
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">9m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">UnauthorizedRequestsSpikeWithDuration
+</span><span>        </span><span style="color:#65737e;"># At minute 9, the rate of errors over the last 2m window interval is 0, so 
+</span><span>        </span><span style="color:#65737e;"># no alerts are expected
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span></code></pre>
+<h3 id="side-effects-of-using-a-duration">Side effects of using a duration</h3>
+<p>Beware of the drawbacks of using an alert duration though! Adding a duration might affect your incident response times in a significant way and Google engineers do a great job telling more about that in <a href="https://sre.google/workbook/alerting-on-slos/">this chapter of the SRE book</a>.</p>
+<p>The purpose of this subchapter is not to suggest one or the other approaches, but instead to show how unit tests could help you focus more on the actual differences and to find out what’s best for your particular use case.</p>
+<h2 id="alert-on-slos-with-missing-scrapes">Alert on SLOs with missing scrapes</h2>
+<p>In this example, we’ll see another standard alert example, where we want to alert if we are not meeting our agreed service level objective (SLO) of 99.9% internal availability for our <code>payments-api</code>, and also see what happens in case no metrics are available!</p>
+<h3 id="our-availability-definition">Our availability definition</h3>
+<p>Availability here is not defined as mere uptime, but more as request availability: we’re not interested in checking that our service is up and running - or better say, not just that - but that our API actually returns successful responses (almost) all the time. With <em>internal</em> availability we mean the availability of our <code>payments-api</code> and its dependencies, excluding the ones that are external to our infrastructure (Like a bank, for instance).</p>
+<p>More formally, we define the internal availability as:
+$$
+\frac{Successful\ requests} {Total\ request - Invalid\ requests - External\ dependency\ errors}
+$$</p>
+<p>In the below samples, we’ll use a custom counter metrics called <code>http_server_sli_total</code>, coming with the usual service label and an additional <code>sli_error_type</code> label that will help us differentiate between: </p>
+<ul>
+<li>Successes → Empty value</li>
+<li>Invalid requests → <code>invalid_request_error</code></li>
+<li>Internal dependency errors → <code>internal_dependency_error</code></li>
+<li>External dependency errors →<code>external_dependency_error</code></li>
+</ul>
+<h3 id="first-attempt">First attempt</h3>
+<p>Let’s start with a basic sample, assuming for simplicity that we always have metrics available, or - in other words - our service has significant traffic already. </p>
+<p>A sample alert rule would be like this: </p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span>- </span><span style="color:#bf616a;">alert</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>    </span><span style="color:#65737e;"># Alert if we&#39;re not meeting our SLO of 99.9% availability
+</span><span>    </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">      sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type=&quot;&quot;}[2m])) /
+</span><span style="color:#a3be8c;">      sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type!~&quot;invalid_request_error|external_dependency_error&quot;}[2m])) 
+</span><span style="color:#a3be8c;">      &lt; 0.999
+</span><span>    </span><span style="color:#bf616a;">for</span><span>: </span><span style="color:#a3be8c;">2m
+</span><span>    </span><span style="color:#bf616a;">labels</span><span>:
+</span><span>      </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span><span>    </span><span style="color:#bf616a;">annotations</span><span>:
+</span><span>      </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">payments-api has had a low internal availability for the operation {{ $labels.operation}} in the last 3 minutes!</span><span>&quot;
+</span><span>      </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">        payments-api has had a low internal availability for the operation {{ $labels.operation}} in the last 3 minutes!
+</span><span style="color:#a3be8c;">        Current value is {{ $value | humanizePercentage }}.
+</span><span>      </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/low-avaiability</span><span>&quot;
+</span></code></pre>
+<p>And, its test: </p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">rule_files</span><span>:
+</span><span>  - </span><span style="color:#a3be8c;">./alerts.yaml
+</span><span>
+</span><span style="color:#bf616a;">tests</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>    </span><span style="color:#bf616a;">input_series</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 50 100 150 200 250 300
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">50+50x5
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;invalid_request_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 0 10 20 30 40 50
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">0 10+10x4
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;internal_dependency_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 0 0 15 30 45 0
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">0x1 15+15x2 0
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;external_dependency_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 0 0 10 10 0 0
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">0x1 10x1 0x1
+</span><span>    </span><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>        </span><span style="color:#65737e;"># At minute 1, only 2 invalid request errors are thrown and our availability scores 100%. No alerts expected
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">2m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>        </span><span style="color:#65737e;"># Things start to change at minute 2, were we observe 10 internal_dependency_error. Our computed availability is 100/(100+15)=86.96%
+</span><span>        </span><span style="color:#65737e;"># That said it&#39;s the first time that we do no meet our SLO, there we do not alert yet! 
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">3m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>        </span><span style="color:#65737e;"># Availability is below standard but the 2 minutes duration is not found yet. No alerts
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">4m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>        </span><span style="color:#65737e;"># Alerts are expected here! At minute 4, the computed availability is 100/(100+30)=76.92% 
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">exp_labels</span><span>:
+</span><span>              </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span><span>              </span><span style="color:#bf616a;">operation</span><span>: </span><span style="color:#a3be8c;">CreatePayment
+</span><span>            </span><span style="color:#bf616a;">exp_annotations</span><span>:
+</span><span>              </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">payments-api has had a low internal availability for the operation CreatePayment in the last 3 minutes!</span><span>&quot;
+</span><span>              </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">                payments-api has had a low internal availability for the operation CreatePayment in the last 3 minutes!
+</span><span style="color:#a3be8c;">                Current value is 76.92%.
+</span><span>              </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/low-avaiability</span><span>&quot;
+</span></code></pre>
+<p>Our alert seems to actually do what we want we want, but in our alert rule, we always assume some level of HTTP traffic for our <code>payments-api</code>. It’s a fair and positive assumption, but perhaps something that we can’t take for granted on day 1 of our API. How is our alert above doing in case of low or missing traffic? </p>
+<p>Let’s have a look.</p>
+<h3 id="missing-scrapes">Missing scrapes</h3>
+<p>Let’s see what happens if we see some missing metrics scrape: let’s imagine that our service has low traffic and we just released a new version of our API, which led to counter resets. This scenario is very close to the one that I tried to describe in one of my <a href="https://adilisio.com/posts/fooled-by-prometheus-rate-function/">previous posts</a>. </p>
+<p>Our application does not <a href="https://www.doit.com/making-peace-with-prometheus-rate/">initialize counters to 0</a> when new services are started, which turns out to be a fairly common thing.</p>
+<p>Let’s try to change our test time series to account for missing scrapes and see how our alert behaves. Let’s zoom in on the <code>input_series</code> block for a bit:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#65737e;"># ... 
+</span><span style="color:#bf616a;">tests</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>    </span><span style="color:#bf616a;">input_series</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># _ _ _ 1 4 7 10 13 16
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">_x3 1+3x5
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;invalid_request_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># _ _ _ _ _ 1 1 1 0 0 
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">_x5 1x2 0x1
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;internal_dependency_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># _ _ _ 1 2 0 0 0 0 0 
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">_x3 1+1x1 0x4
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;external_dependency_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># _ _ _ _ _ _ _ _ _ _ 
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">_x10
+</span><span style="color:#65737e;"># ... 
+</span></code></pre>
+<p>With the above time series, we’re simulating a scenario where our service starts to get API requests from the third minute. On minute 3 we have a success and an internal error, hence we would expect an exact 50% availability score. At minute 4 we have a total increase of 6 requests, made of 2 successes and 4 internal errors with a computed availability of roughly 66.67%. Finally, at minute 5 our results increased by 6 successes, 1 invalid request (in theory irrelevant to our computation), and 1 internal error (due to how Prometheus does extrapolation). So, we would expect roughly an 85.71% availability at minute 6. Since our availability threshold was lower than the expected one for 2 minutes (remember the <code>for</code> duration clause), we should get an alert now! Let’s complete the test and give it a try:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">rule_files</span><span>:
+</span><span>  - </span><span style="color:#a3be8c;">./alerts.yaml
+</span><span>
+</span><span style="color:#bf616a;">tests</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>    </span><span style="color:#bf616a;">input_series</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># _ _ _ 1 4 7 10 13 16
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">_x3 1+3x5
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;invalid_request_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># _ _ _ _ _ 1 1 1 0 0 
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">_x5 1x2 0x1
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;internal_dependency_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># _ _ _ 1 2 _ _ _ _ _ 
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">_x3 1+1x1 _x5
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">http_server_sli_total{service=&quot;payments-api&quot;, pod=&quot;payments-service-abcd&quot;, operation=&quot;CreatePayment&quot;, sli_error_type=&quot;external_dependency_error&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># _ _ _ _ _ _ _ _ _ _ 
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: </span><span style="color:#a3be8c;">_x10
+</span><span>
+</span><span>    </span><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">5m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>        </span><span style="color:#65737e;"># Availability is below standard but the 2 minutes duration is not found yet. No alerts
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">exp_labels</span><span>:
+</span><span>              </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span><span>              </span><span style="color:#bf616a;">operation</span><span>: </span><span style="color:#a3be8c;">CreatePayment
+</span><span>            </span><span style="color:#bf616a;">exp_annotations</span><span>:
+</span><span>              </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">payments-api has had a low internal availability for the operation CreatePayment in the last 3 minutes!</span><span>&quot;
+</span><span>              </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">                payments-api has had a low internal availability for the operation CreatePayment in the last 3 minutes!
+</span><span style="color:#a3be8c;">                Current value is 85.71%.
+</span><span>              </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/low-avaiability</span><span>&quot;
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">6m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span></code></pre>
+<p>Surprisingly, the above test fails! </p>
+<pre data-lang="bash" style="background-color:#2b303b;color:#c0c5ce;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#bf616a;">Unit</span><span> Testing:  06.slo_based_alerts_missing_scrapes/tests.yaml
+</span><span>  </span><span style="color:#bf616a;">FAILED:
+</span><span>    </span><span style="color:#bf616a;">alertname:</span><span> LowInternalAvailability, time: 5m, 
+</span><span>        </span><span style="color:#bf616a;">exp:[
+</span><span>            </span><span style="color:#bf616a;">0:
+</span><span>              </span><span style="color:#bf616a;">Labels:{alertname</span><span>=&quot;</span><span style="color:#a3be8c;">LowInternalAvailability</span><span>&quot;, operation=&quot;</span><span style="color:#a3be8c;">CreatePayment</span><span>&quot;, severity=&quot;</span><span style="color:#a3be8c;">critical</span><span>&quot;}
+</span><span>              </span><span style="color:#bf616a;">Annotations:{description</span><span>=&quot;</span><span style="color:#a3be8c;">payments-api has had a low internal availability for the operation CreatePayment in the last 2 minutes! Current value is 85.71%.\n</span><span>&quot;, runbook_url=&quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/low-avaiability</span><span>&quot;, summary=&quot;</span><span style="color:#a3be8c;">payments-api has had a low internal availability for the operation CreatePayment in the last 2 minutes!</span><span>&quot;}
+</span><span>            </span><span style="color:#bf616a;">], 
+</span><span>        </span><span style="color:#bf616a;">got:[]
+</span></code></pre>
+<p>But… why?</p>
+<p>Let’s leverage an additional test utility offered by Prometheus which gives us the option to actually assert the expected value of our expression at any given time, rather than the presence of an alert. Welcome <a href="https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/#promql_test_case">promql_expr_test</a>, an extra assertion block that we can define besides the <code>alert_rule_test</code> one. </p>
+<p>With the help of this new block, we can translate our expectations above into actual <code>promtool</code> assertions:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">rule_files</span><span>:
+</span><span>  - </span><span style="color:#a3be8c;">./alerts.yaml
+</span><span>
+</span><span style="color:#bf616a;">tests</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: 
+</span><span>    </span><span style="color:#65737e;"># ... unchanged ...
+</span><span>    </span><span style="color:#bf616a;">promql_expr_test</span><span>:
+</span><span>      </span><span style="color:#65737e;"># At minute 3 we expect 50% availability
+</span><span>      - </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">          sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type=&quot;&quot;}[2m])) /
+</span><span style="color:#a3be8c;">          sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type!~&quot;invalid_request_error|external_dependency_error&quot;}[2m]))
+</span><span>        </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">3m
+</span><span>        </span><span style="color:#bf616a;">exp_samples</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">value</span><span>: </span><span style="color:#d08770;">0.5
+</span><span>      </span><span style="color:#65737e;"># At minute 4 we expect roughly 66.67% availability. The increase of 
+</span><span>      </span><span style="color:#65737e;"># successes over the last 2 minutes is computed with the help of some 
+</span><span>      </span><span style="color:#65737e;"># extrapolation mechanism: Prometheus applies the same rate experienced in 
+</span><span>      </span><span style="color:#65737e;"># the last minute, cutting off at 0. So the number of successful requests
+</span><span>      </span><span style="color:#65737e;"># that Prometheus computes for minute 2 is 0 (instead of -2)
+</span><span>      - </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">          sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type=&quot;&quot;}[2m])) /
+</span><span style="color:#a3be8c;">          sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type!~&quot;invalid_request_error|external_dependency_error&quot;}[2m]))
+</span><span>        </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">4m
+</span><span>        </span><span style="color:#bf616a;">exp_samples</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">value</span><span>: </span><span style="color:#d08770;">0.6666666666666666
+</span><span>            </span><span style="color:#bf616a;">labels</span><span>: &#39;</span><span style="color:#a3be8c;">{operation=&quot;CreatePayment&quot;}</span><span>&#39;
+</span><span>      </span><span style="color:#65737e;"># At minute 5 we expect roughly 75% availability
+</span><span>      - </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">          sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type=&quot;&quot;}[2m])) /
+</span><span style="color:#a3be8c;">          sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type!~&quot;invalid_request_error|external_dependency_error&quot;}[2m]))
+</span><span>        </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">5m
+</span><span>        </span><span style="color:#bf616a;">exp_samples</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">value</span><span>: </span><span style="color:#d08770;">0.75
+</span><span>            </span><span style="color:#bf616a;">labels</span><span>: &#39;</span><span style="color:#a3be8c;">{operation=&quot;CreatePayment&quot;}</span><span>&#39;
+</span><span>      </span><span style="color:#65737e;"># At minute 6 we expect roughly 100% availability
+</span><span>      - </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">          sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type=&quot;&quot;}[2m])) /
+</span><span style="color:#a3be8c;">          sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type!~&quot;invalid_request_error|external_dependency_error&quot;}[2m]))
+</span><span>        </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">6m
+</span><span>        </span><span style="color:#bf616a;">exp_samples</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">value</span><span>: </span><span style="color:#d08770;">1
+</span><span>            </span><span style="color:#bf616a;">labels</span><span>: &#39;</span><span style="color:#a3be8c;">{operation=&quot;CreatePayment&quot;}</span><span>&#39;
+</span><span>
+</span><span>    </span><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>      </span><span style="color:#65737e;"># ... unchanged ...
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>			
+</span></code></pre>
+<p>By running again our test we should now get a new - more explicit - error: </p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">expr</span><span>: &quot;</span><span style="color:#a3be8c;">sum by(operation) (rate(http_server_sli_total{service=</span><span style="color:#96b5b4;">\&quot;</span><span style="color:#a3be8c;">payments-api</span><span style="color:#96b5b4;">\&quot;</span><span style="color:#a3be8c;">, sli_error_type=</span><span style="color:#96b5b4;">\&quot;\&quot;</span><span style="color:#a3be8c;">}[2m])) / sum by(operation) (rate(http_server_sli_total{service=</span><span style="color:#96b5b4;">\&quot;</span><span style="color:#a3be8c;">payments-api</span><span style="color:#96b5b4;">\&quot;</span><span style="color:#a3be8c;">, sli_error_type!~</span><span style="color:#96b5b4;">\&quot;</span><span style="color:#a3be8c;">invalid_request_error|external_dependency_error</span><span style="color:#96b5b4;">\&quot;</span><span style="color:#a3be8c;">}[2m]))</span><span style="color:#96b5b4;">\n</span><span>&quot;,
+</span><span>  </span><span style="color:#bf616a;">time</span><span>: </span><span style="color:#a3be8c;">3m,
+</span><span>  </span><span style="color:#bf616a;">exp</span><span>: {} </span><span style="color:#a3be8c;">5E-01
+</span><span>  </span><span style="color:#bf616a;">got</span><span>: </span><span style="color:#a3be8c;">nil
+</span></code></pre>
+<p>This is basically saying that our expectations for what should have happened at minute 3 are wrong: we expected the computed rate to be 50% but it turns out that Prometheus can’t compute any value! </p>
+<p>The error we made was to <em>assume</em> that a missing scrape would be considered as a 0 by Prometheus, but that is not the case: a missing scrape is more simply an undefined value. <a href="https://www.metricfire.com/blog/understanding-the-prometheus-rate-function/">As the rate function requires at least 2 data points to compute a value</a>, it can’t actually find one in this case. So, the correct assertion for minute 3 is as follows:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span>- </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">      sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type=&quot;&quot;}[2m])) /
+</span><span style="color:#a3be8c;">      sum by(operation) (rate(http_server_sli_total{service=&quot;payments-api&quot;, sli_error_type!~&quot;invalid_request_error|external_dependency_error&quot;}[2m]))
+</span><span>    </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">3m
+</span><span>    </span><span style="color:#bf616a;">exp_samples</span><span>:
+</span><span>    </span><span style="color:#65737e;"># we do not expect any value here!
+</span></code></pre>
+<p>Finally, due to the missing increase of errors at minute 3, our alert condition only stays true for 1 minute. Therefore there won’t be any alert firing, because the alert duration that we declared with the help of the for clause is 2 minutes! To get the test passing, we should then modify our <code>alert_rule_test</code> assertions to never expect an alert!</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>    </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>    </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>    </span><span style="color:#65737e;"># No errors nor requests at this stage. No alerts expected
+</span><span>  - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">5m
+</span><span>    </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>    </span><span style="color:#65737e;"># Availability is below standard but the 2 minutes duration
+</span><span>    </span><span style="color:#65737e;"># threshold is not reached yet. No alerts expected
+</span><span>    </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">6m
+</span><span>    </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">LowInternalAvailability
+</span><span>    </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>    </span><span style="color:#65737e;"># In order for a metric to disappear from Prometheus we need 
+</span><span>    </span><span style="color:#65737e;"># at least 5 missing scrapes. Therefore the same value as minute 5 
+</span><span>    </span><span style="color:#65737e;"># is considered for internal errors, hence no increase is found.
+</span><span>    </span><span style="color:#65737e;"># At the same time successful requests are growing so the availability
+</span><span>    </span><span style="color:#65737e;"># goes back to 100%. No alerts are expected!
+</span></code></pre>
+<p>At this point, I hope that you’re convinced a bit more of how unit testing rules can shed light the on internal of Prometheus and help you set exact expectations for your production systems! </p>
+<p>The entire alert and test example related to this last scenario can be found <a href="https://github.com/dili91/prometheus-rules-tests/blob/main/06.slo_based_alerts_missing_scrapes/tests.yaml">here</a>. </p>
+<h2 id="different-policies-depending-on-the-time-of-the-day">Different policies depending on the time of the day</h2>
+<p>Let’s now see one last example where unit tests can come into help: setting different alerting policies based on the time of the day. This is particularly useful when you want to treat minor issues very noisily during working hours but to turn a blind eye to the same when happening at night, to not bother your on-callers for low-impact glitches.</p>
+<h3 id="alert-definition">Alert definition</h3>
+<p>I’ve been using this setup recently to alert on AMQP dead-lettered messages:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">rules</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">alert</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesInHours
+</span><span>    </span><span style="color:#bf616a;">annotations</span><span>:
+</span><span>      </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">{{ $labels.queue }} has {{ $value }} dead-lettered messages</span><span>&quot;
+</span><span>      </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">|
+</span><span style="color:#a3be8c;">        There are {{ $value }} dead-lettered messages on the `{{ $labels.queue }}` queue in the `{{ $labels.vhost }}` virtual host.
+</span><span>      </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/dead-lettered-messages</span><span>&quot;
+</span><span>    </span><span style="color:#65737e;"># During in-hours shifts (Monday to Friday from 10AM UTC to 4:59PM UTC) we want a noisy
+</span><span>    </span><span style="color:#65737e;"># policy for alerts: even one single message in DLQ for at least 2 minutes should page us
+</span><span>    </span><span style="color:#65737e;"># Note that:
+</span><span>    </span><span style="color:#65737e;"># - the amqp_message_ready metric is a counter that represents the messages which are sitting
+</span><span>    </span><span style="color:#65737e;">#   on a queue ready to be consumed 
+</span><span>    </span><span style="color:#65737e;"># - we&#39;re using the max operator to aggregate metrics coming from multiple service instances/pods
+</span><span>    </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">|
+</span><span style="color:#a3be8c;">      max(amqp_messages_ready{vhost=&quot;payments&quot;, queue=&quot;notifications.deadletter&quot;}) by (queue, vhost) &gt; 0
+</span><span style="color:#a3be8c;">      and on() ((hour() &gt;= 10 &lt; 17) and (day_of_week() &gt;= 1 &lt; 6))
+</span><span>    </span><span style="color:#bf616a;">for</span><span>: </span><span style="color:#a3be8c;">2m
+</span><span>    </span><span style="color:#bf616a;">labels</span><span>:
+</span><span>      </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span><span>
+</span><span>  - </span><span style="color:#bf616a;">alert</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesOffHours
+</span><span>    </span><span style="color:#bf616a;">annotations</span><span>:
+</span><span>      </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">{{ $labels.queue }} has {{ $value }} dead-lettered messages</span><span>&quot;
+</span><span>      </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">|
+</span><span style="color:#a3be8c;">        There are {{ $value }} dead-lettered messages on the `{{ $labels.queue }}` queue in the `{{ $labels.vhost }}` virtual host.
+</span><span>      </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/dead-lettered-messages</span><span>&quot;
+</span><span>    </span><span style="color:#65737e;"># During off-hours shifts (Monday to Friday before 10AM and from 5PM, and at every 
+</span><span>    </span><span style="color:#65737e;"># hour during the weekend) we want a more relaxed policy: we should only page the on-caller
+</span><span>    </span><span style="color:#65737e;"># if the number of dead-lettered messages is greater than 3.
+</span><span>    </span><span style="color:#bf616a;">expr</span><span>: </span><span style="color:#b48ead;">|
+</span><span style="color:#a3be8c;">      max(amqp_messages_ready{vhost=&quot;payments&quot;, queue=&quot;notifications.deadletter&quot;}) by (queue, vhost) &gt; 3
+</span><span style="color:#a3be8c;">      and on() (((hour() &gt;= 17 or hour() &lt; 10) and (day_of_week() &gt;= 1 &lt; 6)) or (day_of_week() == 0 or day_of_week() &gt;= 6))
+</span><span>    </span><span style="color:#bf616a;">for</span><span>: </span><span style="color:#a3be8c;">2m
+</span><span>    </span><span style="color:#bf616a;">labels</span><span>:
+</span><span>      </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span></code></pre>
+<p>In the above alert, I have defined a noisy alert policy for dead-lettered messages during the in-hours shift (Monday to Friday from 10 AM to 5 PM) and a more relaxed one for the off-hours shift (Monday to Friday before 10 AM and after 5 PM, at every hour during the weekend): the condition for paging someone is at least 1 message during the in-hours shift, and at least 4 of them at night or during the weekend. </p>
+<h3 id="test-the-different-in-and-off-hours-policies">Test the different in and off-hours policies</h3>
+<p>Let’s now define a test to verify our expectations during the off-hours shift first: we don’t want to spoil our sleep!</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">tests</span><span>:
+</span><span>  </span><span style="color:#65737e;"># Off-hours test
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>    </span><span style="color:#bf616a;">input_series</span><span>:
+</span><span>      </span><span style="color:#65737e;"># We simulate to different series of metrics produced by different pods  
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">amqp_messages_ready{vhost=&quot;payments&quot;, queue=&quot;notifications.deadletter&quot;, pod=&quot;abcd&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: &#39;</span><span style="color:#a3be8c;">10x3</span><span>&#39;
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">amqp_messages_ready{vhost=&quot;payments&quot;, queue=&quot;notifications.deadletter&quot;, pod=&quot;efgh&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: &#39;</span><span style="color:#a3be8c;">0x3</span><span>&#39;
+</span><span>    </span><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesOffHours
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>        </span><span style="color:#65737e;"># No errors are expected at this stage. The alert condition changed to true just now
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">2m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesOffHours
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>        </span><span style="color:#65737e;"># The alert condition has been true on 2 consecutive minutes, 
+</span><span>        </span><span style="color:#65737e;"># so an alert is now expected!
+</span><span>          - </span><span style="color:#bf616a;">exp_labels</span><span>:
+</span><span>              </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span><span>              </span><span style="color:#bf616a;">queue</span><span>: </span><span style="color:#a3be8c;">notifications.deadletter
+</span><span>              </span><span style="color:#bf616a;">vhost</span><span>: </span><span style="color:#a3be8c;">payments
+</span><span>            </span><span style="color:#bf616a;">exp_annotations</span><span>:
+</span><span>              </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">notifications.deadletter has 10 dead-lettered messages</span><span>&quot;
+</span><span>              </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">                There are 10 dead-lettered messages on the `notifications.deadletter` queue in the `payments` virtual host.
+</span><span>              </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/dead-lettered-messages</span><span>&quot;
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">2m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesInHours
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>        </span><span style="color:#65737e;"># we do not expect alerts from the in-hours policy as the defined shift starts at 10AM UTC
+</span></code></pre>
+<p>It’s important to note how the <code>eval_time</code> definition is relative to midnight UTC and to the current day.
+Finally, let’s also check that even a single dead-lettered message is enough to alert us at work:</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">tests</span><span>:
+</span><span>  </span><span style="color:#65737e;"># In-hours test
+</span><span>  - </span><span style="color:#bf616a;">interval</span><span>: </span><span style="color:#a3be8c;">1m
+</span><span>    </span><span style="color:#bf616a;">input_series</span><span>:
+</span><span>      </span><span style="color:#65737e;"># We simulate to different series of metrics produced by different pods  
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">amqp_messages_ready{vhost=&quot;payments&quot;, queue=&quot;notifications.deadletter&quot;, pod=&quot;abcd&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#65737e;"># 10 hours is 600 minutes...
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: &#39;</span><span style="color:#a3be8c;">1x600 1x1</span><span>&#39;
+</span><span>      - </span><span style="color:#bf616a;">series</span><span>: &#39;</span><span style="color:#a3be8c;">amqp_messages_ready{vhost=&quot;payments&quot;, queue=&quot;notifications.deadletter&quot;, pod=&quot;efgh&quot;}</span><span>&#39;
+</span><span>        </span><span style="color:#bf616a;">values</span><span>: &#39;</span><span style="color:#a3be8c;">0x600 0x1</span><span>&#39;
+</span><span>    </span><span style="color:#bf616a;">alert_rule_test</span><span>:
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">10h
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesInHours
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>        </span><span style="color:#65737e;"># No errors are expected at this stage. The alert condition changed to true just now (because of the hour change)
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">10h1m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesInHours
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>        </span><span style="color:#65737e;"># Same as the above one, our alert condition has not been true for 2 minutes (yet)
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">10h2m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesInHours
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>        </span><span style="color:#65737e;"># The alert condition has been true on 2 consecutive minutes, 
+</span><span>        </span><span style="color:#65737e;"># so an alert is now expected!
+</span><span>          - </span><span style="color:#bf616a;">exp_labels</span><span>:
+</span><span>              </span><span style="color:#bf616a;">severity</span><span>: </span><span style="color:#a3be8c;">critical
+</span><span>              </span><span style="color:#bf616a;">queue</span><span>: </span><span style="color:#a3be8c;">notifications.deadletter
+</span><span>              </span><span style="color:#bf616a;">vhost</span><span>: </span><span style="color:#a3be8c;">payments
+</span><span>            </span><span style="color:#bf616a;">exp_annotations</span><span>:
+</span><span>              </span><span style="color:#bf616a;">summary</span><span>: &quot;</span><span style="color:#a3be8c;">notifications.deadletter has 1 dead-lettered messages</span><span>&quot;
+</span><span>              </span><span style="color:#bf616a;">description</span><span>: </span><span style="color:#b48ead;">&gt;
+</span><span style="color:#a3be8c;">                There are 1 dead-lettered messages on the `notifications.deadletter` queue in the `payments` virtual host.
+</span><span>              </span><span style="color:#bf616a;">runbook_url</span><span>: &quot;</span><span style="color:#a3be8c;">https://your-oncall-docs.com/dead-lettered-messages</span><span>&quot;
+</span><span>      - </span><span style="color:#bf616a;">eval_time</span><span>: </span><span style="color:#a3be8c;">10h2m
+</span><span>        </span><span style="color:#bf616a;">alertname</span><span>: </span><span style="color:#a3be8c;">DeadLetteredMessagesOffHours
+</span><span>        </span><span style="color:#bf616a;">exp_alerts</span><span>:
+</span><span>        </span><span style="color:#65737e;"># we do not expect alerts from the off-hours policy as the defined shift starts at 10AM UTC
+</span></code></pre>
+<p>Isn’t this a cool way of raising confidence in your alerts, even at night? You can focus on preparing your dinner instead of making sure you won't be woken up by a negligible glitch tonight.</p>
+<h1 id="key-takeaways-and-unsolved-problems">Key takeaways and unsolved problems</h1>
+<p>By now, I hope you are really looking forward to adding unit tests to your Prometheus alerts!</p>
+<p>In my experience, they have been really helpful in improving the operational readiness of my team: they did not just help set correct alerting rules but also, and I’d say almost equally importantly, they encouraged my team to always decorate each and every alert with all the meaningful context, from clear summaries and descriptions to links to our on-call playbooks.</p>
+<p>Last but not least these tests have been probably my favorite way to understand a bit more about how Prometheus works, especially when it comes to the rate functions and its extrapolation magic as well as counter resets!</p>
+<p>That being said, it’s important to note that this type of test is partial: the tests shown in this article mostly focus on making sure your Prometheus rules are working as you would expect. </p>
+<p>They do not necessarily help you write simpler and/or more performant queries, and with this kind of test, you can’t actually check that the metrics you are asserting actually exist on your Prometheus database! From a unit test perspective, you can have a state-of-the-art alert, but if you type <code>http_request_total</code> (singular) instead of <code>http_requests_total</code> (plural) you might get a very unpleasant and unexpected call from one of your customers.</p>
+<p>This category of problems requires different testing strategies and tools. One example is <a href="https://cloudflare.github.io/pint/">pint</a>, developed by the Cloudflare engineering team. I may write about it in a future post here!</p>
+<h1 id="additional-resources">Additional resources</h1>
+<p><a href="https://github.com/dili91/prometheus-rules-tests">Here</a> you can find all the alerts and tests shown in this article. </p>
+<p>Moreover, a list of of resources I've either directly referenced here or used to prepare this post:</p>
+<ul>
+<li><a href="https://prometheus.io/docs/introduction/overview/#what-are-metrics">Prometheus official documentation</a></li>
+<li><a href="https://www.youtube.com/watch?v=7uy_yovtyqw">PromLabs YouTube chanel - Understanding Counter Rates and Increases in PromQL</a></li>
+<li><a href="https://www.doit.com/making-peace-with-prometheus-rate/">Doit.com - Making peace with Prometheus rate()</a></li>
+<li><a href="https://samber.github.io/awesome-prometheus-alerts/rules.html">Awesome Prometheus alerts - Collection of alerting rules</a></li>
+<li><a href="https://sre.google/workbook/on-call/">Google SRE Book - On-Call section</a></li>
+<li><a href="https://blog.cloudflare.com/monitoring-our-monitoring">Cloudflare blog - Monitoring our monitoring</a></li>
+</ul>
+
+  </div>
+
+	
+
+  <div class="pagination">
+  	<a href="https://adilisio.com/posts/sequentially-starting-containers-in-a-kubernetes-pod/" class="left arrow">&#8592;</a>
+		<a href="#" class="top">Top</a>
+		<a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/" class="right arrow">&#8594;</a>
+  </div>
+
+  </main>
+
+  
+  <footer>
+    <span></span>
+  </footer>
+  
+</body>
+</html>

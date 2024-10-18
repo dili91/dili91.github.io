@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  
+<title>Yet another connection reset | Andrea Di Lisio</title>
+
+
+
+<meta property="og:title" content="Yet another connection reset">
+
+
+
+<meta name="author" content="Andrea Di Lisio">
+
+
+<meta property="og:locale" content="en-US">
+
+
+<meta name="description" content="Envoy and Kestrel: not exactly love at first sight">
+<meta property="og:description" content="Envoy and Kestrel: not exactly love at first sight">
+
+
+
+<link rel="canonical" href="https://adilisio.com/posts/yet-another-connection-reset/">
+<meta property="og:url" content="https://adilisio.com/posts/yet-another-connection-reset/">
+
+
+
+<meta property="og:site_name" content="Andrea Di Lisio" />
+
+
+
+
+
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2024-10-18T00:00:00+00:00">
+
+
+
+
+
+  <link rel="next" href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/">
+
+
+
+  <meta name="twitter:card" content="summary">
+
+
+
+  <meta property="twitter:title" content="Yet another connection reset">
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+{
+  "author": {
+    "@type":"Person",
+	  "name":"Andrea Di Lisio",
+  },
+  "description": "Envoy and Kestrel: not exactly love at first sight",
+  "url": "https://adilisio.com/posts/yet-another-connection-reset/",
+  "@context":"https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Yet another connection reset"
+  
+    
+    
+      "datePublished":"2024-10-18T00:00:00+00:00",
+    
+    "mainEntityOfPage":{
+      "@type":"WebPage",
+      "@id":"https://adilisio.com/posts/yet-another-connection-reset/"
+    },
+  
+}
+</script>
+
+  
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="https://adilisio.com/rss.xml">
+  
+
+  <link rel="stylesheet" href="https://adilisio.com/main.css">
+  <link rel="stylesheet" href="https://adilisio.com/custom.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Libre+Baskerville:400,400i,700">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="https://adilisio.com/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://adilisio.com/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://adilisio.com/assets/apple-touch-icon.png">
+
+  
+    <link type="application/atom+xml" rel="alternate" href="https://adilisio.com/rss.xml" title="Andrea Di Lisio" />
+  
+
+  
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2G3RGMKL8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D2G3RGMKL8');
+    </script>
+  
+
+  
+  
+</head>
+
+<body>
+  
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="https://adilisio.com/">
+        <h2 class="nav-title">Andrea Di Lisio</h2>
+      </a>
+      <ul>
+        <li><a href="https://adilisio.com/">Resume</a></li>
+        <li><a href="https://adilisio.com/posts">Posts</a></li>
+        <li><a target="_blank" href="https://github.com/dili91">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+
+  <main>
+    
+  <div class="post">
+  	<div class="post-info">
+  		<span>Written by</span> Andrea Di Lisio<br>
+  		
+  		<span>on&nbsp;</span><time datetime="2024-10-18">October 18, 2024</time>
+  	</div>
+  	<h1 class="post-title">Yet another connection reset</h1>
+  	<div class="post-line"></div>
+  	<p><img src="/assets/images/posts/2024-10-18_yet_another_connection_reset/reset.png" alt="Connection reset" />
+<em>A sort-of accurate representation of a scissor cutting connections to my Kestrel server, as hallucinated by OpenAI</em></p>
+<p>This is meant to be a short post about a bad day I had a work recently.</p>
+<h1 id="initial-context">Initial context</h1>
+<p>My team had to expose a new API over gRPC from one of our .NET Core backend applications (from now on named <em>Service C</em>) to be consumed by a downstream service (from now on named <em>Service A</em>), similarly implemented using .NET core. The 2 services had to communicate over HTTPS within our Kubernetes cluster.</p>
+<p>While we're slowly stepping into the magic world of service meshes (thanks to <a href="https://linkerd.io/">LinkerD</a>), historically we have been solving all these connectivity-related challenges with the help of <a href="https://www.envoyproxy.io/">Envoy</a>, deployed as sidecar in our application pods. Envoy was originally introduced as a drop-in technology to implement gRPC load-balancing, and a kind-of transparent solution for TLS termination, with or without mutual TLS. It's a widely adopted technology in my company, and we keep using it, especially on existing applications serving live traffic, like <em>Service C</em>.</p>
+<p>However, oddly enough, in our <em>Service C</em> Envoy was used only as egress to communicate with downstream services. Why? Maybe at the time <em>Service A</em> was integrated with our gRPC API, we had a tight deadline for going live, and considering that <em>Service A</em>'s gRPC .NET client was capable of load balancing, we probably preferred taking the shortest route and decided to not use Envoy at all as ingress, but simply have our .NET core application accepting requests over HTTPs and be responsible for TLS termination... Or, at least, this is how I explained it to myself. </p>
+<p>This is more or less the initial setup we had:</p>
+<p><img src="/assets/images/posts/2024-10-18_yet_another_connection_reset/initial_setup.png" alt="Initial setup" />
+<em><em>Service A</em> calls <em>Service C</em> over HTTPS. At this point it's not clear what's the benefit of using Envoy on <em>Service C</em>...</em></p>
+<h1 id="moving-on">Moving on</h1>
+<p>Then, a few days ago my team had to onboard a new service, namely <em>Service B</em>, over the same gRPC API. In this case, also because we had a mutual TLS requirement, I suggested to start using Envoy also as ingress and TLS terminator. So, I did the following changes, mainly:</p>
+<ol>
+<li>I changed our .NET app to start accepting requests on HTTP only;</li>
+<li>I added a new TLS-only ingress on our Envoy sidecar, to be used by <em>Service A</em>;</li>
+<li>I basically kept the existing mTLS ingress on <em>Service C</em> as it was, and I routed the new traffic coming from <em>Service</em> B onto it.</li>
+</ol>
+<p>An important requirement for the above changes was that nothing should have changed from the perspective of <em>Service A</em>, to not impact live traffic. The new setup looked like something like this:</p>
+<p><img src="/assets/images/posts/2024-10-18_yet_another_connection_reset/final_setup.png" alt="Final setup" />
+<em>Both <em>Service A</em> and Service B reach <em>Service C</em> via its Envoy ingress. The .NET core container within <em>Service C</em> expects plain HTTP requests only.</em></p>
+<p>Everything looked linear and clear on paper, but it was not working 😅.</p>
+<h1 id="all-that-glitters-is-not-gold">All that glitters is not gold</h1>
+<p>I did not face particular problems with <em>Service B</em> and <em>C</em>, it was the interaction between <em>A</em> and <em>C</em> that turned out to be particularly painful.</p>
+<h2 id="application-layer-protocol-negotiation-alpn">Application-Layer Protocol Negotiation (ALPN)</h2>
+<p>The first error I've encountered was very explicit and therefore quite straightforward to solve: </p>
+<blockquote>
+<p>Error starting gRPC call. HttpRequestException: Requesting HTTP version 2.0 with version policy RequestVersionOrHigher while server offers only version fallback.</p>
+</blockquote>
+<p>After some <a href="https://github.com/grpc/grpc-dotnet/issues/1287">digging</a>, it turned out that the ingress on <em>Service C</em> was only offering HTTP/1.1 as available protocol by default, whereas the .NET client included in <em>Service A</em> could only communicate using HTTP/2.</p>
+<p>I solved this problem by declaring explicitly the ALPN protocol that the ingress on Service C was offering, on the Envoy configuration*</p>
+<pre data-lang="yaml" style="background-color:#2b303b;color:#c0c5ce;" class="language-yaml "><code class="language-yaml" data-lang="yaml"><span style="color:#bf616a;">listeners</span><span>:
+</span><span>  - </span><span style="color:#bf616a;">name</span><span>: </span><span style="color:#a3be8c;">tls_internal_ingress
+</span><span>    </span><span style="color:#bf616a;">address</span><span>: </span><span style="color:#d08770;">0.0.0.0
+</span><span>    </span><span style="color:#bf616a;">port</span><span>: </span><span style="color:#d08770;">3001
+</span><span>    </span><span style="color:#bf616a;">tls</span><span>:
+</span><span>      </span><span style="color:#bf616a;">enabled</span><span>: </span><span style="color:#d08770;">true
+</span><span>      </span><span style="color:#bf616a;">alpn_protocols</span><span>: 
+</span><span>          - &quot;</span><span style="color:#a3be8c;">h2</span><span>&quot;
+</span><span>      </span><span style="color:#bf616a;">certs_mount_path</span><span>: </span><span style="color:#a3be8c;">/certs/
+</span><span>      </span><span style="color:#bf616a;">mtls</span><span>:
+</span><span>        </span><span style="color:#bf616a;">enabled</span><span>: </span><span style="color:#d08770;">false
+</span><span>    </span><span style="color:#bf616a;">o11y</span><span>:
+</span><span>      </span><span style="color:#bf616a;">enabled</span><span>: </span><span style="color:#d08770;">true
+</span><span>      </span><span style="color:#bf616a;">http</span><span>:
+</span><span>        </span><span style="color:#bf616a;">kind</span><span>: </span><span style="color:#a3be8c;">server
+</span><span>    </span><span style="color:#bf616a;">virtual_hosts</span><span>:
+</span><span>        </span><span style="color:#bf616a;">domains</span><span>:
+</span><span>          - &quot;</span><span style="color:#a3be8c;">*</span><span>&quot;
+</span><span>        </span><span style="color:#bf616a;">routes</span><span>:
+</span><span>          - </span><span style="color:#bf616a;">match</span><span>: { </span><span style="color:#bf616a;">prefix</span><span>: &quot;</span><span style="color:#a3be8c;">/</span><span>&quot;, </span><span style="color:#bf616a;">grpc</span><span>: { } }
+</span><span>            </span><span style="color:#bf616a;">route</span><span>:
+</span><span>              </span><span style="color:#bf616a;">cluster</span><span>: </span><span style="color:#a3be8c;">signup_plus_grpc_cluster
+</span></code></pre>
+<p>* note that the above configuration snippet mixes Envoy's native configuration syntax with a simple abstraction layer that we build on top of <a href="https://helm.sh/">Helm</a>.</p>
+<h2 id="alternate-schemes">Alternate schemes</h2>
+<p>The second problem I've faced is the one that made me mad for a few hours, and the reason why I've decided writing this <del>rant</del> post. This one got me crazy because all I had from the logs of the Envoy ingress on Service C was a <code>Connection reset</code> error with a vague <code>upstream reset: reset reason: remote reset, transport failure reason:</code> error message.</p>
+<p>After a few hours trying to explain myself what I had done wrong that day to deserve such destiny, I noticed that Envoy logs were mentioning a specific <code>UR</code> response flag. After some back and forth on Envoy's <a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage">public documentation</a> (sigh), I've found the following bits:</p>
+<blockquote>
+<p>UpstreamRemoteReset  |  UR  | Upstream remote reset in addition to 503 response code.</p>
+</blockquote>
+<p>Which convinced me that the problem could only have been on the .NET application within <em>Service C</em>. So I've moved on in that direction, and I've discovered something else: </p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>...
+</span><span>service-c-5c9f4f979-kbpdm envoy-proxy &#39;:method&#39;, &#39;POST&#39;
+</span><span>service-c-5c9f4f979-kbpdm envoy-proxy &#39;:scheme&#39;, &#39;https&#39;
+</span><span>service-c-5c9f4f979-kbpdm envoy-proxy &#39;:authority&#39;, &#39;service-c.verification.svc.cluster.local:3001&#39;
+</span><span>...
+</span></code></pre>
+<p>The weird thing was that the request originating from the grpc-dotnet client of <em>Service A</em> was left as-is from the Envoy ingress on <em>Service C</em>. More specifically, the <code>https</code> scheme was not transformed after the TLS termination offered by Envoy. 
+My thinking got a confirmation also from <a href="https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#scheme">Envoy docs</a>: </p>
+<blockquote>
+<p>For HTTP/2, and HTTP/3, incoming :scheme headers are trusted and propagated through upstream</p>
+</blockquote>
+<p>But... that was probably unexpected from the perspective of the .NET app within <em>Service C</em> because it was accepting only requests in plain...</p>
+<p>And... finally! I realized that the <a href="https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.server.kestrel.core.kestrelserveroptions.allowalternateschemes?view=aspnetcore-8.0"><code>AllowAlternateScheme</code> property of Kestrel</a> - the technology behind the .NET gRPC server on Service C - being set to <code>false</code> by default was the issue in this case. Toggling that flag to true put an end to my sorrows! 🎊</p>
+<p>PS: in hindsight, another approach could have been to take over the <a href="https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-scheme-header-transformation">default scheme manipulation on Envoy</a>, but at that point my brain was fried and the last thing on earth I wanted to do was fighting again with Envoy... That being said, changing this default behavior on Envoy is probably a better choice, to not pollute the application code with networking-specific details.</p>
+
+  </div>
+
+	
+
+  <div class="pagination">
+  	<a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/" class="left arrow">&#8592;</a>
+		<a href="#" class="top">Top</a>
+		
+  </div>
+
+  </main>
+
+  
+  <footer>
+    <span></span>
+  </footer>
+  
+</body>
+</html>

@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  
+<title>Automating my gym bookings with a serverless assistant | Andrea Di Lisio</title>
+
+
+
+<meta property="og:title" content="Automating my gym bookings with a serverless assistant">
+
+
+
+<meta name="author" content="Andrea Di Lisio">
+
+
+<meta property="og:locale" content="en-US">
+
+
+<meta name="description" content="My journey to building a serverless assistant that could help me booking my gym classes">
+<meta property="og:description" content="My journey to building a serverless assistant that could help me booking my gym classes">
+
+
+
+<link rel="canonical" href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/">
+<meta property="og:url" content="https://adilisio.com/posts/my-serverless-gym-booking-assistant/">
+
+
+
+<meta property="og:site_name" content="Andrea Di Lisio" />
+
+
+
+
+
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2024-08-27T00:00:00+00:00">
+
+
+
+  <link rel="prev" href="https://adilisio.com/posts/yet-another-connection-reset/">
+
+
+
+  <link rel="next" href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/">
+
+
+
+  <meta name="twitter:card" content="summary">
+
+
+
+  <meta property="twitter:title" content="Automating my gym bookings with a serverless assistant">
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+{
+  "author": {
+    "@type":"Person",
+	  "name":"Andrea Di Lisio",
+  },
+  "description": "My journey to building a serverless assistant that could help me booking my gym classes",
+  "url": "https://adilisio.com/posts/my-serverless-gym-booking-assistant/",
+  "@context":"https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Automating my gym bookings with a serverless assistant"
+  
+    
+    
+      "datePublished":"2024-08-27T00:00:00+00:00",
+    
+    "mainEntityOfPage":{
+      "@type":"WebPage",
+      "@id":"https://adilisio.com/posts/my-serverless-gym-booking-assistant/"
+    },
+  
+}
+</script>
+
+  
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="https://adilisio.com/rss.xml">
+  
+
+  <link rel="stylesheet" href="https://adilisio.com/main.css">
+  <link rel="stylesheet" href="https://adilisio.com/custom.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Libre+Baskerville:400,400i,700">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="https://adilisio.com/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://adilisio.com/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://adilisio.com/assets/apple-touch-icon.png">
+
+  
+    <link type="application/atom+xml" rel="alternate" href="https://adilisio.com/rss.xml" title="Andrea Di Lisio" />
+  
+
+  
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2G3RGMKL8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D2G3RGMKL8');
+    </script>
+  
+
+  
+  
+</head>
+
+<body>
+  
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="https://adilisio.com/">
+        <h2 class="nav-title">Andrea Di Lisio</h2>
+      </a>
+      <ul>
+        <li><a href="https://adilisio.com/">Resume</a></li>
+        <li><a href="https://adilisio.com/posts">Posts</a></li>
+        <li><a target="_blank" href="https://github.com/dili91">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+
+  <main>
+    
+  <div class="post">
+  	<div class="post-info">
+  		<span>Written by</span> Andrea Di Lisio<br>
+  		
+  		<span>on&nbsp;</span><time datetime="2024-08-27">August 27, 2024</time>
+  	</div>
+  	<h1 class="post-title">Automating my gym bookings with a serverless assistant</h1>
+  	<div class="post-line"></div>
+  	<p><img src="/assets/images/posts/2024-07-28_automating-my-gym-bookings-with-a-serverless-assistant/gym-booking-assistant.webp" alt="Gym booking assitant" />
+<em>My assistant as imagined by GPT-4o</em></p>
+<!-- no toc -->
+<h1 id="table-of-contents">Table of contents <!-- omit in toc --></h1>
+<ul>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#foreword">Foreword</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#traffic-analysis">Traffic analysis</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#requirements">Requirements</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#implementation-pillars">Implementation pillars</a>
+<ul>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#choice-of-language">Choice of language</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#no-lambda-no-party">No Lambda, no party</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#standing-on-the-shoulders-of-eventbridge">Standing on the shoulders of EventBridge</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#configuration-and-secrets-management">Configuration and secrets management</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#events">Events</a>
+<ul>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#classbookingavailable">ClassBookingAvailable</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#classbookingcompleted">ClassBookingCompleted</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#classbookingfailed">ClassBookingFailed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#architecture-overview">Architecture overview</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#show-me-the-code">Show me the code!</a>
+<ul>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#scan-function">Scan function</a></li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#book-function">Book function</a>
+<ul>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#what-could-go-wrong">What could go wrong</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#common-layer">Common layer</a>
+<ul>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#all-that-glitters-is-not-gold">All that glitters is not gold</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#sms-notification">SMS notification</a>
+<ul>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#quota-request-increase-what">Quota request increase what?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#final-thoughts">Final thoughts</a></li>
+</ul>
+<h1 id="foreword">Foreword</h1>
+<p>Have you ever been subscribed to a gym and felt frustrated by the difficulty of booking a class? That’s exactly how I felt when I decided to re-subscribe last year.</p>
+<p>To overcome this frustration, I decided to build a virtual booking assistant to help me never miss my favorite classes again. What started as a late-night coding experiment quickly evolved: As I added feature after feature, I realized that this project wasn’t just a practical solution for me but especially a fun and engaging challenge. This blog post will take you through my coding journey.</p>
+<p>To the best of my knowledge, and after checking my gym's contract, I don't think the tool I've built is ultimately against my gym's rules. However, using a script to book my classes does not seem fair, especially if the targeted classes are often overbooked (which is not my case anyway). Therefore, I’m not suggesting readers emulate what I’ve built. I’m simply sharing my experience because I find it interesting from a software engineering standpoint, hoping it might inspire something even better!</p>
+<h1 id="traffic-analysis">Traffic analysis</h1>
+<p>Before starting any kind of work I had to first understand how my gym mobile application exchanged data with the API server. 
+To do this, I simulated a <a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">Man-In-The-Middle attack</a> on my home network, using <a href="https://mitmproxy.org/">mitmproxy</a> as an HTTPS proxy running on my laptop. </p>
+<p><img src="/assets/images/posts/2024-07-28_automating-my-gym-bookings-with-a-serverless-assistant/mitm.png" alt="Simulated MITM setup" />
+<em>Simulated MITM setup</em></p>
+<p>Once routed all my Iphone internet traffic through my local proxy and installed <a href="https://docs.mitmproxy.org/stable/concepts-certificates/#quick-setup">Mitmproxy's CA certificate</a>, I was able to see in plain all the HTTPS traffic generated by my gym mobile application, while using it. After fine-tuning the proxy filters I could easily extract the API interactions I was mostly interested in: login, class search, class book and un-book...</p>
+<p><img src="/assets/images/posts/2024-07-28_automating-my-gym-bookings-with-a-serverless-assistant/mitmproxy_details.png" alt="Request intercepted on Mitmproxy CLI" />
+<em>Request intercepted on Mitmproxy CLI</em></p>
+<p>Once identified the interested API interactions, I've exported them as a set of <a href="https://httpie.io/">httpie</a> requests, so that I can familiarize with those. I ultimately also discoverd an <a href="https://apidocs.mywellness.com/">OpenAPI spec</a>, but that turned out to be neither accurate nor complete. </p>
+<p>That being said, with the help of mitmproxy I was able to collect all the information I need to start playing with the API and understand how to automate the API calls that were required to book a class. I could then start to envision the next steps!</p>
+<h1 id="requirements">Requirements</h1>
+<p>What I wanted build was fairly simple: a daemon running on a schedule that would have booked one or more classes matching some configured search criteria. Once booked a class, the daemon should have informed about the completed booking via an SMS delivered to my mobile number.</p>
+<p>As per non-functional requirements, I just wanted the solution to be as simple as it could be and with serverless setup. As I never had the chance to get my hands dirty with a bunch of fully managed AWS services that I could have helped this time, I decided to use <em>AWS Lambda</em> and <em>EventBridge</em> as the backbone of my solution. After some minimal investigation I realized that a few more secondary services like <em>Secrets Manager</em>, <em>Systems manager</em> and <em>Simple Notification Services (SNS)</em> would have fully satisfied my needs.</p>
+<p>As for the infrastructure, I was not really interested in coding and versioning it (eg. with the help of Terraform or similar). For this reason, the solution that I will present shortly required a bit of manual setup on the AWS console.</p>
+<h1 id="implementation-pillars">Implementation pillars</h1>
+<p>Let's shed a light on the main implementation choices I did.</p>
+<h2 id="choice-of-language">Choice of language</h2>
+<p>Choosing what language to use for my project was by far the most difficult decision to take, due to a mix of language-specific oddities and as a consequence of having chosen <em>Lambda</em> as container for my code. </p>
+<p>When writing the first lines of code I had opted for pure Javascript, as I knew that the support for NodeJS on Lambda was good. Also, I did not really need a strongly-typed language and wanted something that was a good fit for scripting.</p>
+<p>But then... When I decided to do embark on a slightly more complex journey, I thought that using a strongly-typed language would have helped me not hallucinating. So I went for Typescript: I'm definitely not an expert in the field, but I did not want to rewrite completely the code I had already written.</p>
+<p>Very sadly, I quickly ran into several obstacles that led me to revert to plain JavaScript. I would have expected that creating a new project using the latest version of NodeJs and a well-known test framework like Mocha would be straightforward and take only a few seconds. However, my assumption turned out to be very wrong, as also testified by the many threads available online of people struggling even with the most basic setup. After some head-banging and also thanks to some previous art kindly shared on Github, I finally managed to get what I needed. That sense of relief did not last long though: Typescript is not natively supported by Lambda and trying to understand how to compile and package my code, so that I could leverage Lambda layers really got me frustrated, at the point that I ultimately decided to go back to pure Javascript. </p>
+<p>Lesson learned: when planning to use <em>Lambda</em> take the time needed to evaluate your candidate language upfront! </p>
+<h2 id="no-lambda-no-party">No Lambda, no party</h2>
+<p>As mentioned, I've decided to go with <em>AWS Lambda functions</em> to host my code. More precisely, I split my code into 2 different <em>Lambda</em> functions: one for <strong>scanning</strong> the available classes and one for <strong>booking</strong> them. I decided to segregate responsibilities into 2 different units to keep the code more readable, and also because the triggers for the 2 actions (searching and booking classes) were very different events in my mind: scanning would have worked on a schedule, booking would have been a one-off, on-demand, task.</p>
+<p>Organizing my code into 2 different Lambda functions pushed me to think how to not duplicate dependencies, and utilities (like the HTTP client to interact with the Gym API, or other logging related functions) on the 2 deployments. <em>Lambda</em> <a href="https://docs.aws.amazon.com/lambda/latest/dg/chapter-layers.html">layers</a> came to help, although not without headaches as we'll see later.</p>
+<h2 id="standing-on-the-shoulders-of-eventbridge">Standing on the shoulders of EventBridge</h2>
+<p>I decided to rely on events to let the 2 separate functions interoperate, for multiple reasons:</p>
+<ul>
+<li>I wanted to keep coupling limited;</li>
+<li>I wanted something easy to observe/monitor, and I thought that events would have helped achieving that;</li>
+<li>I wanted something that I could easily extend.</li>
+</ul>
+<p>As I've learned while preparing for the <em>AWS Certified Solutions Architect</em> exam and realized even more while doing this small project, there are many ways to implement event-based solutions on AWS.</p>
+<p>However, in my case I didn't need just a message broker:</p>
+<ol>
+<li>I needed the class search task to be triggered on a regular schedule;</li>
+<li>I needed a way to dynamically schedule one-off runs for classes that should have been booked at a future date compared to the one when running the class search.</li>
+</ol>
+<p>As I've learned, both requirements are greatly fulfilled by <em>EventBridge</em> *</p>
+<p>Finally, with the help of an extra <em>rule</em> there (and 0 code!) I could connect a <em>Simple Notification Service (SNS)</em> topic and deliver an SMS to my mobile number, with a customized message and the information of the class just booked.</p>
+<p>* there's <em>just</em> one caveat: the scheduler on <em>EventBridge</em> has a 60 seconds precision! This means that if you're scheduling something at 3:15:00PM there's a chance (in the worst case) that it gets fired at 3:15:59PM. In my case, I decided that this was an acceptable caveat.</p>
+<h2 id="configuration-and-secrets-management">Configuration and secrets management</h2>
+<p>Both the <em>scan</em> and <em>book</em> functions needed configurations - some of which sensitive. </p>
+<p>I decided to go with <em>Systems manager</em> for non-sensitive and generic values. The code would have looked them up on AWS with a known key (eg. <code>facilityId</code>).</p>
+<p>For sensitive configurations I've instead used <em>Secrets manager</em>. The key difference with regular configuration was that they were user-specific (they included personal credentials to login on the Gym's API) and I wanted to potentially easily reuse my solution with different logins. So I've defined a user-specific secret on <em>Secrets manager</em> identified by a user alias (eg. <code>andrea</code>) that would have been referenced by the code hosted on the <em>Lambda</em> functions.</p>
+<h2 id="events">Events</h2>
+<p>After some thinking I decided to define 3 events: </p>
+<ul>
+<li><code>ClassBookingAvailable</code></li>
+<li><code>ClassBookingCompleted</code></li>
+<li><code>ClassBookingFailed</code></li>
+</ul>
+<p>The last two (completed and failed) could have been merged into a single event with some extra fields representing the success/failure outcome and the error if any. However, doing so would have forced me to put some undesired, extra complexity on the EventBridge rule that is responsible for delivering the SMS.</p>
+<p>Each of these events share a common base structure: they come with an <code>userAlias</code> string field, representing the user to which the event is connected, and a <code>class</code> object containing details about the class.</p>
+<p>Note that the above mentioned events are just defined within the code (Eg. the <a href="https://github.com/dili91/gym-booking-assistant/blob/main/scan/index.js#L238">ClassBookingAvailable event</a>) and on default event bus on <em>EventBridge</em>. I could have followed a more structured approach, and used both a custom <a href="https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-schema-registry.html">Schema registry</a> and a custom bus. However, both looked to me a bit overhead for the purpose.</p>
+<p>Let's see more in details what these events represent and their fields.</p>
+<h3 id="classbookingavailable">ClassBookingAvailable</h3>
+<p>This event is published whenever a class matching the configured search criteria is ready to be booked, with the following structure</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">userAlias</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">andrea</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">class</span><span>&quot;:{
+</span><span>    &quot;</span><span style="color:#a3be8c;">id</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">84ddef10-45df-42d7-b45e-fac603fe01c7</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Cycle Spirit</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">partitionDate</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">20240727</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">startDate</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">2024-07-27T19:00:00</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">bookingInfo</span><span>&quot;:{
+</span><span>      &quot;</span><span style="color:#a3be8c;">cancellationMinutesInAdvance</span><span>&quot;:</span><span style="color:#d08770;">120</span><span>,
+</span><span>      &quot;</span><span style="color:#a3be8c;">bookingUserStatus</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">CanBook</span><span>&quot;
+</span><span>    }
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>When scanning for classes on the Gym's API, a class can be found in different states: if a class is found in the <code>CanBook</code> state, it means that the booking for that class can happen already, if the class has a <code>WaitingBookingOpensPremium</code> state it means that the class cannot be booked before a<code>bookingInfo.bookingOpensOn</code> datetime, available on the class item on the Gym's API response.</p>
+<p>For a class in the <code>CanBook</code> state on the Gym's API, the <em>Scan</em> function immediately pushes a <code>ClassBookingAvailable</code> event on the EventBridge's default bus.
+If a class is in the <code>WaitingBookingOpensPremium</code> state, the Scan function <em>schedules</em> a <code>ClassBookingAvailable</code> event, with the help of a dynamic rule on EventBridge that 
+will fire at a datetime of value <code>bookingInfo.bookingOpensOn</code>. We'll see more about these differences when looking at the code later.</p>
+<p>Note that both immediate and future <em>class available</em> events will trigger the booking step in the same way. The <em>Book</em> function basically does not care whether an event was received straight after being found on the Gym's API or after some time, on a predefined schedule.</p>
+<p>A few additional things worth highlighting from the above JSON sample: </p>
+<ul>
+<li>the <code>partitionDate</code> gives an indication of the day when the class will happen and <strong>complements</strong> the <code>id</code> field. The <code>id</code> field on its own is not enough to uniquely identify an <em>instance</em> of class: a class' <code>id</code> represent a particular type of class happening always at the same time on the same day of the week. However, the <code>partitionDate</code> is required to discriminated amongst different instances of the same type of class;</li>
+<li>the <code>startDate</code> helps in 2 ways at booking time: along with the <code>cancellationMinutesInAdvance</code> included in the <code>bookingInfo</code> object, It helps avoiding to book classes that can't be un-booked. This is particularly useful to avoid penalties. The booking code - as visible later - skips booking the classes that are happening in less than a configured time. Moreover, it has a cosmetic purpose, as it used in the SMS payload that is sent to notify about the completed booking.</li>
+</ul>
+<h3 id="classbookingcompleted">ClassBookingCompleted</h3>
+<p>This event is published when a class has been booked successfully. It comes with the following shape:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">userAlias</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">andrea</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">class</span><span>&quot;:{
+</span><span>    &quot;</span><span style="color:#a3be8c;">id</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">95788cd4-c15a-4fe3-a6da-95b7764b4cba</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Cycle Spirit</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">startDate</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">2024-07-27T19:00:00</span><span>&quot;
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>The <code>userAlias</code> field here helps routing the notification to the expected user mobile number, if any is configured! The other information are only used to build a human friendly SMS payload.</p>
+<h3 id="classbookingfailed">ClassBookingFailed</h3>
+<p>This event is published whenever there's a failure while booking a class:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">userAlias</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">andrea</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">class</span><span>&quot;:{
+</span><span>    &quot;</span><span style="color:#a3be8c;">id</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">95788cd4-c15a-4fe3-a6da-95b7764b4cba</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">name</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Cycle Spirit</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">startDate</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">2024-07-27T19:00:00</span><span>&quot;
+</span><span>  },
+</span><span>  &quot;</span><span style="color:#a3be8c;">errors</span><span>&quot;:[
+</span><span>    {
+</span><span>      &quot;</span><span style="color:#a3be8c;">field</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">BookingApiException.TooEarlyToBookParticipantException</span><span>&quot;,
+</span><span>      &quot;</span><span style="color:#a3be8c;">type</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">Validation</span><span>&quot;,
+</span><span>      &quot;</span><span style="color:#a3be8c;">details</span><span>&quot;:&quot;&quot;,
+</span><span>      &quot;</span><span style="color:#a3be8c;">errorMessage</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">The class is not open for booking yet</span><span>&quot;,
+</span><span>      &quot;</span><span style="color:#a3be8c;">message</span><span>&quot;:&quot;</span><span style="color:#a3be8c;">The class is not open for booking yet</span><span>&quot;
+</span><span>    }
+</span><span>  ]
+</span><span>}
+</span></code></pre>
+<p>The <code>errors</code> field is an array of error objects, that maps 1:1 with what is returned by the Gym's API. </p>
+<p>At the time of writing this event just helps monitoring, it is not connected to any SMS notification.</p>
+<h1 id="architecture-overview">Architecture overview</h1>
+<p>Overall, at a high level the solution I had in mind was as follows:</p>
+<ol>
+<li>Every 6 hours an EventBridge rule would have triggered the <code>Scan</code> <em>Lambda</em> function, that would have searched for available classes and either immediately publish a <code>ClassBookingAvailable</code> event or schedule one for the future;</li>
+<li>Every time <code>ClassBookingAvailable</code> event would have been published on EventBridge, the <code>Book</code> <em>Lambda</em> function would have been invoked and it would have eventually produced a <code>ClassBookingCompleted</code> or <code>ClassBookingFailed</code> event. In the first case, an SMS would have been delivered as well to a configured mobile number.</li>
+</ol>
+<p>Here's a high-level diagram of the architecture:</p>
+<p><img src="/assets/images/posts/2024-07-28_automating-my-gym-bookings-with-a-serverless-assistant/architecture.png" alt="Architecture overview" />
+<em>Assistant's architecture high level overview</em></p>
+<h1 id="show-me-the-code">Show me the code!</h1>
+<p>The whole source code is available on <a href="https://github.com/dili91/gym-booking-assistant">my Github</a>. 
+Here I'll just focus on the main parts.</p>
+<h2 id="scan-function">Scan function</h2>
+<p>Let's start by having a look at the <em>Scan</em> function code:</p>
+<pre data-linenos data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><table><tbody><tr><td>1</td><td><span>exports.</span><span style="color:#8fa1b3;">handler </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">event</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span></td></tr><tr><td>2</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">userAlias </span><span>= event.</span><span style="color:#bf616a;">detail</span><span>.</span><span style="color:#bf616a;">userAlias</span><span>;
+</span></td></tr><tr><td>3</td><td><span>  </span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">userAlias</span><span>) {
+</span></td></tr><tr><td>4</td><td><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">errorMsg </span><span>= &quot;</span><span style="color:#a3be8c;">Received even without userAlias. Aborting</span><span>&quot;;
+</span></td></tr><tr><td>5</td><td><span>    </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">error</span><span>(</span><span style="color:#bf616a;">errorMsg</span><span>);
+</span></td></tr><tr><td>6</td><td><span>
+</span></td></tr><tr><td>7</td><td><span>    </span><span style="color:#b48ead;">throw </span><span>new Error(</span><span style="color:#bf616a;">errorMsg</span><span>);
+</span></td></tr><tr><td>8</td><td><span>  }
+</span></td></tr><tr><td>9</td><td><span>
+</span></td></tr><tr><td>10</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">userCredentials </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">getUserCredentials</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>);
+</span></td></tr><tr><td>11</td><td><span>  </span><span style="color:#b48ead;">let </span><span style="color:#bf616a;">loginData </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">gymApiClient</span><span>.</span><span style="color:#8fa1b3;">login</span><span>(
+</span></td></tr><tr><td>12</td><td><span>    </span><span style="color:#bf616a;">userCredentials</span><span>.</span><span style="color:#bf616a;">loginUsername</span><span>,
+</span></td></tr><tr><td>13</td><td><span>    </span><span style="color:#bf616a;">userCredentials</span><span>.</span><span style="color:#bf616a;">loginPassword</span><span>,
+</span></td></tr><tr><td>14</td><td><span>  );
+</span></td></tr><tr><td>15</td><td><span>
+</span></td></tr><tr><td>16</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">facilityId </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">getConfig</span><span>(&quot;</span><span style="color:#a3be8c;">facilityId</span><span>&quot;);
+</span></td></tr><tr><td>17</td><td><span>
+</span></td></tr><tr><td>18</td><td><span>  </span><span style="color:#65737e;">// Search all classes that match my criteria of interest
+</span></td></tr><tr><td>19</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">searchClassesRequest </span><span>= {
+</span></td></tr><tr><td>20</td><td><span>    method: &quot;</span><span style="color:#a3be8c;">GET</span><span>&quot;,
+</span></td></tr><tr><td>21</td><td><span>    url: `</span><span style="color:#a3be8c;">${</span><span style="color:#bf616a;">CALENDAR_API_BASE_URI</span><span style="color:#a3be8c;">}/enduser/class/search</span><span>`,
+</span></td></tr><tr><td>22</td><td><span>    headers: {
+</span></td></tr><tr><td>23</td><td><span>      Authorization: `</span><span style="color:#a3be8c;">Bearer ${</span><span style="color:#bf616a;">loginData</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">token</span><span style="color:#a3be8c;">}</span><span>`,
+</span></td></tr><tr><td>24</td><td><span>    },
+</span></td></tr><tr><td>25</td><td><span>    params: {
+</span></td></tr><tr><td>26</td><td><span>      facilityId: </span><span style="color:#bf616a;">facilityId</span><span>,
+</span></td></tr><tr><td>27</td><td><span>      fromDate: </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">nowCET</span><span>().</span><span style="color:#8fa1b3;">format</span><span>(&quot;</span><span style="color:#a3be8c;">yyyyMMDD</span><span>&quot;),
+</span></td></tr><tr><td>28</td><td><span>      eventType: &quot;</span><span style="color:#a3be8c;">Class</span><span>&quot;,
+</span></td></tr><tr><td>29</td><td><span>    },
+</span></td></tr><tr><td>30</td><td><span>  };
+</span></td></tr><tr><td>31</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">searchClassesResponse </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">gymApiClient
+</span></td></tr><tr><td>32</td><td><span>    .</span><span style="color:#8fa1b3;">getHttpClient</span><span>()
+</span></td></tr><tr><td>33</td><td><span>    .</span><span style="color:#8fa1b3;">request</span><span>(</span><span style="color:#bf616a;">searchClassesRequest</span><span>);
+</span></td></tr><tr><td>34</td><td><span>
+</span></td></tr><tr><td>35</td><td><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">gymApiClient</span><span>.</span><span style="color:#8fa1b3;">isResponseError</span><span>(</span><span style="color:#bf616a;">searchClassesResponse</span><span>)) {
+</span></td></tr><tr><td>36</td><td><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">errorMsg </span><span>= `</span><span style="color:#a3be8c;">Unable to get classes: ${JSON.</span><span style="color:#96b5b4;">stringify</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">searchClassesResponse</span><span style="color:#a3be8c;">.data)}. Aborting</span><span>`;
+</span></td></tr><tr><td>37</td><td><span>    </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">error</span><span>(</span><span style="color:#bf616a;">errorMsg</span><span>);
+</span></td></tr><tr><td>38</td><td><span>
+</span></td></tr><tr><td>39</td><td><span>    </span><span style="color:#b48ead;">throw </span><span>new Error(</span><span style="color:#bf616a;">errorMsg</span><span>);
+</span></td></tr><tr><td>40</td><td><span>  }
+</span></td></tr><tr><td>41</td><td><span>
+</span></td></tr><tr><td>42</td><td><span>  </span><span style="color:#65737e;">// It seems not possible to filter classes of interest via an API call. So we need to fetch them first
+</span></td></tr><tr><td>43</td><td><span>  </span><span style="color:#65737e;">// and retrospectively ignore some of those.
+</span></td></tr><tr><td>44</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">filteredEvents </span><span>= </span><span style="color:#bf616a;">searchClassesResponse</span><span>.data
+</span></td></tr><tr><td>45</td><td><span>    .</span><span style="color:#8fa1b3;">filter</span><span>(
+</span></td></tr><tr><td>46</td><td><span>      (</span><span style="color:#bf616a;">e</span><span>) </span><span style="color:#b48ead;">=&gt;
+</span></td></tr><tr><td>47</td><td><span>        </span><span style="color:#65737e;">// excludes the classes booked already
+</span></td></tr><tr><td>48</td><td><span>        </span><span style="color:#bf616a;">e</span><span>.</span><span style="color:#bf616a;">isParticipant </span><span>!= </span><span style="color:#d08770;">true </span><span>&amp;&amp;
+</span></td></tr><tr><td>49</td><td><span>        </span><span style="color:#65737e;">// excludes the classes that can&#39;t be booked for some reason
+</span></td></tr><tr><td>50</td><td><span>        </span><span style="color:#bf616a;">e</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">bookingUserStatus </span><span>!= &quot;</span><span style="color:#a3be8c;">CannotBook</span><span>&quot; &amp;&amp;
+</span></td></tr><tr><td>51</td><td><span>        </span><span style="color:#bf616a;">e</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">bookingUserStatus </span><span>!= &quot;</span><span style="color:#a3be8c;">BookingClosed</span><span>&quot;,
+</span></td></tr><tr><td>52</td><td><span>    )
+</span></td></tr><tr><td>53</td><td><span>    .</span><span style="color:#8fa1b3;">filter</span><span>((</span><span style="color:#bf616a;">e</span><span>) </span><span style="color:#b48ead;">=&gt;
+</span></td></tr><tr><td>54</td><td><span>      </span><span style="color:#bf616a;">SEARCH_CRITERIA</span><span>.</span><span style="color:#bf616a;">classNames</span><span>.</span><span style="color:#8fa1b3;">some</span><span>((</span><span style="color:#bf616a;">c</span><span>) </span><span style="color:#b48ead;">=&gt;
+</span></td></tr><tr><td>55</td><td><span>        </span><span style="color:#bf616a;">e</span><span>.name.</span><span style="color:#96b5b4;">toLowerCase</span><span>().</span><span style="color:#8fa1b3;">includes</span><span>(</span><span style="color:#bf616a;">c</span><span>.</span><span style="color:#96b5b4;">toLowerCase</span><span>()),
+</span></td></tr><tr><td>56</td><td><span>      ),
+</span></td></tr><tr><td>57</td><td><span>    )
+</span></td></tr><tr><td>58</td><td><span>    .</span><span style="color:#8fa1b3;">filter</span><span>((</span><span style="color:#bf616a;">e</span><span>) </span><span style="color:#b48ead;">=&gt;
+</span></td></tr><tr><td>59</td><td><span>      </span><span style="color:#65737e;">// Class should be taken in one of the days of interest
+</span></td></tr><tr><td>60</td><td><span>      </span><span style="color:#bf616a;">SEARCH_CRITERIA</span><span>.</span><span style="color:#bf616a;">days</span><span>.</span><span style="color:#8fa1b3;">includes</span><span>(</span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">stringToDateCET</span><span>(</span><span style="color:#bf616a;">e</span><span>.</span><span style="color:#bf616a;">startDate</span><span>).</span><span style="color:#8fa1b3;">day</span><span>()),
+</span></td></tr><tr><td>61</td><td><span>    )
+</span></td></tr><tr><td>62</td><td><span>    .</span><span style="color:#8fa1b3;">filter</span><span>((</span><span style="color:#bf616a;">e</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span></td></tr><tr><td>63</td><td><span>      </span><span style="color:#65737e;">// startDate time should fall in one of the hour ranges
+</span></td></tr><tr><td>64</td><td><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">timeFormat </span><span>= &quot;</span><span style="color:#a3be8c;">HH:mm:ss</span><span>&quot;;
+</span></td></tr><tr><td>65</td><td><span>      </span><span style="color:#65737e;">// this parses the class start timestamp in $timeFormat
+</span></td></tr><tr><td>66</td><td><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">classStartDateTime </span><span>= </span><span style="color:#bf616a;">utils
+</span></td></tr><tr><td>67</td><td><span>        .</span><span style="color:#8fa1b3;">stringToDateCET</span><span>(</span><span style="color:#bf616a;">e</span><span>.</span><span style="color:#bf616a;">startDate</span><span>)
+</span></td></tr><tr><td>68</td><td><span>        .</span><span style="color:#8fa1b3;">format</span><span>(</span><span style="color:#bf616a;">timeFormat</span><span>);
+</span></td></tr><tr><td>69</td><td><span>      </span><span style="color:#65737e;">// this one builds a new date attaching the above time portion to today&#39;s date portion
+</span></td></tr><tr><td>70</td><td><span>      </span><span style="color:#65737e;">// this makes sure that when comparing timestamps results are not spoiled by different days
+</span></td></tr><tr><td>71</td><td><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">adjustedClassStartDate </span><span>= </span><span style="color:#8fa1b3;">moment</span><span>(</span><span style="color:#bf616a;">classStartDateTime</span><span>, </span><span style="color:#bf616a;">timeFormat</span><span>);
+</span></td></tr><tr><td>72</td><td><span>
+</span></td></tr><tr><td>73</td><td><span>      </span><span style="color:#65737e;">// this returns true if the class&#39; startDateTime if there&#39;s at least a match
+</span></td></tr><tr><td>74</td><td><span>      </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">SEARCH_CRITERIA</span><span>.</span><span style="color:#bf616a;">hourRangesCET</span><span>.</span><span style="color:#8fa1b3;">some</span><span>((</span><span style="color:#bf616a;">hr</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span></td></tr><tr><td>75</td><td><span>        </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">rangeStartTime </span><span>= </span><span style="color:#8fa1b3;">moment</span><span>(</span><span style="color:#bf616a;">hr</span><span>.start, </span><span style="color:#bf616a;">timeFormat</span><span>);
+</span></td></tr><tr><td>76</td><td><span>        </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">rangeEndTime </span><span>= </span><span style="color:#8fa1b3;">moment</span><span>(</span><span style="color:#bf616a;">hr</span><span>.</span><span style="color:#bf616a;">end</span><span>, </span><span style="color:#bf616a;">timeFormat</span><span>);
+</span></td></tr><tr><td>77</td><td><span>
+</span></td></tr><tr><td>78</td><td><span>        </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">adjustedClassStartDate</span><span>.</span><span style="color:#8fa1b3;">isBetween</span><span>(</span><span style="color:#bf616a;">rangeStartTime</span><span>, </span><span style="color:#bf616a;">rangeEndTime</span><span>);
+</span></td></tr><tr><td>79</td><td><span>      });
+</span></td></tr><tr><td>80</td><td><span>    });
+</span></td></tr><tr><td>81</td><td><span>
+</span></td></tr><tr><td>82</td><td><span>  </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">debug</span><span>(
+</span></td></tr><tr><td>83</td><td><span>    `</span><span style="color:#a3be8c;">Found ${</span><span style="color:#bf616a;">filteredEvents</span><span style="color:#a3be8c;">.length} events of the categories of interest.</span><span>`,
+</span></td></tr><tr><td>84</td><td><span>  );
+</span></td></tr><tr><td>85</td><td><span>
+</span></td></tr><tr><td>86</td><td><span>  </span><span style="color:#b48ead;">for </span><span>(</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">e </span><span>of </span><span style="color:#bf616a;">filteredEvents</span><span>) {
+</span></td></tr><tr><td>87</td><td><span>    </span><span style="color:#b48ead;">switch </span><span>(</span><span style="color:#bf616a;">e</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">bookingUserStatus</span><span>) {
+</span></td></tr><tr><td>88</td><td><span>      </span><span style="color:#b48ead;">case </span><span>&quot;</span><span style="color:#a3be8c;">CanBook</span><span>&quot;:
+</span></td></tr><tr><td>89</td><td><span>        </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">debug</span><span>(
+</span></td></tr><tr><td>90</td><td><span>          `</span><span style="color:#a3be8c;">Booking for class ${</span><span style="color:#bf616a;">e</span><span style="color:#a3be8c;">.name} with id=${</span><span style="color:#bf616a;">e</span><span style="color:#a3be8c;">.id} should happen immediately.</span><span>`,
+</span></td></tr><tr><td>91</td><td><span>        );
+</span></td></tr><tr><td>92</td><td><span>        </span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">publishBookingAvailableEvent</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>, </span><span style="color:#bf616a;">e</span><span>);
+</span></td></tr><tr><td>93</td><td><span>        </span><span style="color:#b48ead;">break</span><span>;
+</span></td></tr><tr><td>94</td><td><span>      </span><span style="color:#b48ead;">case </span><span>&quot;</span><span style="color:#a3be8c;">WaitingBookingOpensPremium</span><span>&quot;:
+</span></td></tr><tr><td>95</td><td><span>        </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">debug</span><span>(
+</span></td></tr><tr><td>96</td><td><span>          `</span><span style="color:#a3be8c;">Booking for class ${</span><span style="color:#bf616a;">e</span><span style="color:#a3be8c;">.name} with id=${</span><span style="color:#bf616a;">e</span><span style="color:#a3be8c;">.id} should be scheduled on ${</span><span style="color:#bf616a;">e</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">bookingInfo</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">bookingOpensOn</span><span style="color:#a3be8c;">}</span><span>`,
+</span></td></tr><tr><td>97</td><td><span>        );
+</span></td></tr><tr><td>98</td><td><span>        </span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">scheduleFutureBooking</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>, </span><span style="color:#bf616a;">e</span><span>);
+</span></td></tr><tr><td>99</td><td><span>        </span><span style="color:#b48ead;">break</span><span>;
+</span></td></tr><tr><td>100</td><td><span>      </span><span style="color:#b48ead;">default</span><span>:
+</span></td></tr><tr><td>101</td><td><span>        </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">error</span><span>(
+</span></td></tr><tr><td>102</td><td><span>          `</span><span style="color:#a3be8c;">Unexpected status for class ${</span><span style="color:#bf616a;">e</span><span style="color:#a3be8c;">.name} with id ${</span><span style="color:#bf616a;">e</span><span style="color:#a3be8c;">.id}: ${</span><span style="color:#bf616a;">e</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">bookingInfo</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">bookingUserStatus</span><span style="color:#a3be8c;">}. Skipping.</span><span>`,
+</span></td></tr><tr><td>103</td><td><span>        );
+</span></td></tr><tr><td>104</td><td><span>        </span><span style="color:#b48ead;">return</span><span>;
+</span></td></tr><tr><td>105</td><td><span>    }
+</span></td></tr><tr><td>106</td><td><span>  }
+</span></td></tr><tr><td>107</td><td><span>};
+</span></td></tr></tbody></table></code></pre>
+<p>The first lines (<code>2-8</code>) are simply for validation. If the <code>userAlias</code> is not part of the event an error is thrown. </p>
+<p>Lines <code>10-40</code> include the code required to create and fire the search classes requests. There are a few references to the <code>utils</code> and <code>gymApiClient</code> modules that are hosted within the common layer, which I'll talk about more later in the <a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/#common-layer">dedicated chapter</a>.</p>
+<p>Unfortunately the Gym's API does not offer great filtering features. Hence, we have to retrospectively exclude events that are out of interest from the Gym's API response (lines <code>42-80</code>). The <code>SEARCH_CRITERIA</code> referenced in the code is a constant defined on the same file, of the following shape:</p>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">SEARCH_CRITERIA </span><span>= {
+</span><span>  classNames: [&quot;</span><span style="color:#a3be8c;">Pilates</span><span>&quot;],
+</span><span>  hourRangesCET: [
+</span><span>    {
+</span><span>      start: &quot;</span><span style="color:#a3be8c;">08:00:00</span><span>&quot;,
+</span><span>      end: &quot;</span><span style="color:#a3be8c;">10:00:30</span><span>&quot;,
+</span><span>    },
+</span><span>    {
+</span><span>      start: &quot;</span><span style="color:#a3be8c;">18:00:00</span><span>&quot;,
+</span><span>      end: &quot;</span><span style="color:#a3be8c;">21:00:00</span><span>&quot;,
+</span><span>    },
+</span><span>  ],
+</span><span>  </span><span style="color:#65737e;">// 0 Sunday, 6 Saturday
+</span><span>  days: [</span><span style="color:#d08770;">1</span><span>, </span><span style="color:#d08770;">2</span><span>, </span><span style="color:#d08770;">3</span><span>, </span><span style="color:#d08770;">4</span><span>, </span><span style="color:#d08770;">5</span><span>],
+</span><span>};
+</span></code></pre>
+<p>Thanks to this constant, the code narrows the focus only on particular type of classes happening on specific days and during predefined time windows.</p>
+<p>After some logging (lines <code>82-84</code>), the code finally takes care of what should happen with the classes that are of interest. It loops through each of those items, and:</p>
+<ul>
+<li>invokes a <code>publishBookingAvailableEvent</code> function if the class has a <code>CanBook</code> state;</li>
+<li>calls a <code>scheduleFutureBooking</code> function if the class' state is <code>WaitingBookingOpensPremium</code>;</li>
+<li>Otherwise, does nothing but log an error and return.</li>
+</ul>
+<p>The <code>publishBookingAvailableEvent</code> function takes the <code>userAlias</code> and the event details as parameters, and immediately publishes a <code>ClassBookingAvailable</code> on the default <em>EventBridge</em> event bus:</p>
+<pre data-linenos data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><table><tbody><tr><td>1</td><td><span style="color:#b48ead;">async function </span><span style="color:#8fa1b3;">publishBookingAvailableEvent</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>, </span><span style="color:#bf616a;">classDetails</span><span>) {
+</span></td></tr><tr><td>2</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">classBookingAvailableEvent </span><span>= {
+</span></td></tr><tr><td>3</td><td><span>    Entries: [
+</span></td></tr><tr><td>4</td><td><span>      {
+</span></td></tr><tr><td>5</td><td><span>        Time: new Date(),
+</span></td></tr><tr><td>6</td><td><span>        Source: &quot;</span><span style="color:#a3be8c;">GymBookingAssistant.scan</span><span>&quot;,
+</span></td></tr><tr><td>7</td><td><span>        DetailType: &quot;</span><span style="color:#a3be8c;">ClassBookingAvailable</span><span>&quot;,
+</span></td></tr><tr><td>8</td><td><span>        Detail: JSON.</span><span style="color:#96b5b4;">stringify</span><span>(
+</span></td></tr><tr><td>9</td><td><span>          </span><span style="color:#8fa1b3;">craftClassBookingAvailableEventPayload</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>, </span><span style="color:#bf616a;">classDetails</span><span>),
+</span></td></tr><tr><td>10</td><td><span>        ),
+</span></td></tr><tr><td>11</td><td><span>      },
+</span></td></tr><tr><td>12</td><td><span>    ],
+</span></td></tr><tr><td>13</td><td><span>  };
+</span></td></tr><tr><td>14</td><td><span>
+</span></td></tr><tr><td>15</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">putEventResponse </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">eventBridgeClient</span><span>.</span><span style="color:#96b5b4;">send</span><span>(
+</span></td></tr><tr><td>16</td><td><span>    new PutEventsCommand(</span><span style="color:#bf616a;">classBookingAvailableEvent</span><span>),
+</span></td></tr><tr><td>17</td><td><span>  );
+</span></td></tr><tr><td>18</td><td><span>
+</span></td></tr><tr><td>19</td><td><span>  </span><span style="color:#b48ead;">if </span><span>(
+</span></td></tr><tr><td>20</td><td><span>    </span><span style="color:#bf616a;">putEventResponse</span><span>[&quot;</span><span style="color:#a3be8c;">$metadata</span><span>&quot;].</span><span style="color:#bf616a;">httpStatusCode </span><span>!= </span><span style="color:#d08770;">200 </span><span>||
+</span></td></tr><tr><td>21</td><td><span>    </span><span style="color:#bf616a;">putEventResponse</span><span>.</span><span style="color:#bf616a;">FailedEntryCount </span><span>&gt; </span><span style="color:#d08770;">0
+</span></td></tr><tr><td>22</td><td><span>  ) {
+</span></td></tr><tr><td>23</td><td><span>    </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">error</span><span>(
+</span></td></tr><tr><td>24</td><td><span>      &quot;</span><span style="color:#a3be8c;">There were one or more errors while publishing a ClassBookingAvailable event.</span><span>&quot;,
+</span></td></tr><tr><td>25</td><td><span>    );
+</span></td></tr><tr><td>26</td><td><span>  }
+</span></td></tr><tr><td>27</td><td><span>}
+</span></td></tr></tbody></table></code></pre>
+<p>Whereas, the <code>scheduleFutureBooking</code> creates a schedule to publish a ClassBookingAvailable event in future, precisely at <code>bookingInfo.bookingOpensOn</code>:</p>
+<pre data-linenos data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><table><tbody><tr><td>1</td><td><span style="color:#b48ead;">async function </span><span style="color:#8fa1b3;">scheduleFutureBooking</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>, </span><span style="color:#bf616a;">classDetails</span><span>) {
+</span></td></tr><tr><td>2</td><td><span>  </span><span style="color:#b48ead;">let </span><span style="color:#bf616a;">bookingOpensOnUTC </span><span>= new Date(</span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">bookingOpensOn</span><span>)
+</span></td></tr><tr><td>3</td><td><span>    .</span><span style="color:#8fa1b3;">toISOString</span><span>()
+</span></td></tr><tr><td>4</td><td><span>    .</span><span style="color:#96b5b4;">slice</span><span>(</span><span style="color:#d08770;">0</span><span>, -</span><span style="color:#d08770;">5</span><span>);
+</span></td></tr><tr><td>5</td><td><span>
+</span></td></tr><tr><td>6</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">scheduleRequest </span><span>= {
+</span></td></tr><tr><td>7</td><td><span>    Name: `</span><span style="color:#a3be8c;">ScheduleBooking_${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.id}</span><span>`,
+</span></td></tr><tr><td>8</td><td><span>    Description: `</span><span style="color:#a3be8c;">Class: ${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.name} - Starts at: ${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">startDate</span><span style="color:#a3be8c;">}</span><span>`,
+</span></td></tr><tr><td>9</td><td><span>    ScheduleExpression: `</span><span style="color:#a3be8c;">at(${</span><span style="color:#bf616a;">bookingOpensOnUTC</span><span style="color:#a3be8c;">})</span><span>`,
+</span></td></tr><tr><td>10</td><td><span>    Target: {
+</span></td></tr><tr><td>11</td><td><span>      Arn: &quot;</span><span style="color:#a3be8c;">arn:aws:events:eu-south-1:097176176455:event-bus/default</span><span>&quot;,
+</span></td></tr><tr><td>12</td><td><span>      RoleArn:
+</span></td></tr><tr><td>13</td><td><span>        &quot;</span><span style="color:#a3be8c;">arn:aws:iam::097176176455:role/service-role/GymBookingAssistantEventBridgeRole</span><span>&quot;,
+</span></td></tr><tr><td>14</td><td><span>      EventBridgeParameters: {
+</span></td></tr><tr><td>15</td><td><span>        DetailType: &quot;</span><span style="color:#a3be8c;">ClassBookingAvailable</span><span>&quot;,
+</span></td></tr><tr><td>16</td><td><span>        Source: &quot;</span><span style="color:#a3be8c;">GymBookingAssistant.scan</span><span>&quot;,
+</span></td></tr><tr><td>17</td><td><span>      },
+</span></td></tr><tr><td>18</td><td><span>      </span><span style="color:#65737e;">// The schedule event is one that contains the userAlias and a slimmed-down
+</span></td></tr><tr><td>19</td><td><span>      </span><span style="color:#65737e;">// version of the class object coming from the Gym API
+</span></td></tr><tr><td>20</td><td><span>      Input: JSON.</span><span style="color:#96b5b4;">stringify</span><span>(
+</span></td></tr><tr><td>21</td><td><span>        </span><span style="color:#8fa1b3;">craftClassBookingAvailableEventPayload</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>, </span><span style="color:#bf616a;">classDetails</span><span>),
+</span></td></tr><tr><td>22</td><td><span>      ),
+</span></td></tr><tr><td>23</td><td><span>    },
+</span></td></tr><tr><td>24</td><td><span>    ActionAfterCompletion: </span><span style="color:#bf616a;">ActionAfterCompletion</span><span>.</span><span style="color:#bf616a;">DELETE</span><span>,
+</span></td></tr><tr><td>25</td><td><span>    FlexibleTimeWindow: {
+</span></td></tr><tr><td>26</td><td><span>      Mode: </span><span style="color:#bf616a;">FlexibleTimeWindowMode</span><span>.</span><span style="color:#bf616a;">OFF</span><span>,
+</span></td></tr><tr><td>27</td><td><span>    },
+</span></td></tr><tr><td>28</td><td><span>  };
+</span></td></tr><tr><td>29</td><td><span>
+</span></td></tr><tr><td>30</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">createScheduleResponse </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">schedulerClient</span><span>.</span><span style="color:#96b5b4;">send</span><span>(
+</span></td></tr><tr><td>31</td><td><span>    new CreateScheduleCommand(</span><span style="color:#bf616a;">scheduleRequest</span><span>),
+</span></td></tr><tr><td>32</td><td><span>  );
+</span></td></tr><tr><td>33</td><td><span>
+</span></td></tr><tr><td>34</td><td><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">createScheduleResponse</span><span>[&quot;</span><span style="color:#a3be8c;">$metadata</span><span>&quot;].</span><span style="color:#bf616a;">httpStatusCode </span><span>!= </span><span style="color:#d08770;">200</span><span>) {
+</span></td></tr><tr><td>35</td><td><span>    </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">error</span><span>(
+</span></td></tr><tr><td>36</td><td><span>      &quot;</span><span style="color:#a3be8c;">There were one or more errors while creating a booking schedule.</span><span>&quot;,
+</span></td></tr><tr><td>37</td><td><span>    );
+</span></td></tr><tr><td>38</td><td><span>  }
+</span></td></tr><tr><td>39</td><td><span>}
+</span></td></tr></tbody></table></code></pre>
+<p>As <em>EventBridge</em> (by default) requires schedules to be declared in UTC, some minimal massaging is required on the original datetime as it's returned in CET timezone by the Gym's API (lines <code>2-4</code>). The schedule has a fairly strict requirement for the execution time, therefore it does not allow a flexible time window (lines <code>25-27</code>). Moreover, it self deletes from EventBridge (line <code>24</code>) once executed.</p>
+<p>Figuring out what values to use for the <code>Arn</code> and <code>RoleArn</code> included in the <code>Target</code> object (lines <code>11-12</code>) was not straightforward, as the <a href="https://docs.aws.amazon.com/scheduler/latest/APIReference/API_Target.html">official docs</a> are only suggesting what values could be used. Luckily, <a href="https://stackoverflow.com/questions/76091158/error-the-execution-role-you-provide-must-allow-aws-eventbridge-scheduler-to-as">others had stumbled across a similar problem already</a>.</p>
+<p>Both the <code>publishBookingAvailableEvent</code> and <code>scheduleFutureBooking</code> leverage the same internal <code>craftClassBookingAvailableEventPayload</code> utility to build the event payload to be published or scheduled:</p>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#b48ead;">function </span><span style="color:#8fa1b3;">craftClassBookingAvailableEventPayload</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>, </span><span style="color:#bf616a;">classDetails</span><span>) {
+</span><span>  </span><span style="color:#b48ead;">return </span><span>{
+</span><span>    userAlias: </span><span style="color:#bf616a;">userAlias</span><span>,
+</span><span>    class: {
+</span><span>      id: </span><span style="color:#bf616a;">classDetails</span><span>.id,
+</span><span>      name: </span><span style="color:#bf616a;">classDetails</span><span>.name,
+</span><span>      partitionDate: </span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">partitionDate</span><span>,
+</span><span>      startDate: </span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">startDate</span><span>,
+</span><span>      bookingInfo: {
+</span><span>        cancellationMinutesInAdvance:
+</span><span>          </span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">cancellationMinutesInAdvance</span><span>,
+</span><span>        bookingUserStatus: </span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">bookingUserStatus</span><span>,
+</span><span>      },
+</span><span>    },
+</span><span>  };
+</span><span>}
+</span></code></pre>
+<p>That's all for the <em>Scan</em> function. Let's now focus on the code required to book a class.</p>
+<h2 id="book-function">Book function</h2>
+<p>The <em>Book</em> function is invoked with events of type <code>ClassBookingAvailable</code> events, without differences between immediate and scheduled events: </p>
+<pre data-linenos data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><table><tbody><tr><td>1</td><td><span>exports.</span><span style="color:#8fa1b3;">handler </span><span>= </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">event</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span></td></tr><tr><td>2</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">userAlias </span><span>= event.</span><span style="color:#bf616a;">detail</span><span>.</span><span style="color:#bf616a;">userAlias</span><span>;
+</span></td></tr><tr><td>3</td><td><span>  </span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">userAlias</span><span>) {
+</span></td></tr><tr><td>4</td><td><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">errorMsg </span><span>= &quot;</span><span style="color:#a3be8c;">Received even without userAlias. Aborting</span><span>&quot;;
+</span></td></tr><tr><td>5</td><td><span>    </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">error</span><span>(</span><span style="color:#bf616a;">errorMsg</span><span>);
+</span></td></tr><tr><td>6</td><td><span>
+</span></td></tr><tr><td>7</td><td><span>    </span><span style="color:#b48ead;">throw </span><span>new Error(</span><span style="color:#bf616a;">errorMsg</span><span>);
+</span></td></tr><tr><td>8</td><td><span>  }
+</span></td></tr><tr><td>9</td><td><span>
+</span></td></tr><tr><td>10</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">classDetails </span><span>= event.</span><span style="color:#bf616a;">detail</span><span>.</span><span style="color:#bf616a;">class</span><span>;
+</span></td></tr><tr><td>11</td><td><span>
+</span></td></tr><tr><td>12</td><td><span>  </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">debug</span><span>(
+</span></td></tr><tr><td>13</td><td><span>    `</span><span style="color:#a3be8c;">Received event of type=${event[</span><span>&quot;</span><span style="color:#a3be8c;">detail-type</span><span>&quot;</span><span style="color:#a3be8c;">]} from source=${event.source} with id=${event.id}.</span><span style="color:#96b5b4;">\n</span><span style="color:#a3be8c;">Trying to book class with id=${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.id} and partitionDate=${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">partitionDate</span><span style="color:#a3be8c;">} for userAlias=${</span><span style="color:#bf616a;">userAlias</span><span style="color:#a3be8c;">} ...</span><span>`,
+</span></td></tr><tr><td>14</td><td><span>  );
+</span></td></tr><tr><td>15</td><td><span>
+</span></td></tr><tr><td>16</td><td><span>  </span><span style="color:#65737e;">// Check class booking status. This should never be different from CanBook or WaitingBookingOpensPremium, but let&#39;s double check
+</span></td></tr><tr><td>17</td><td><span>  </span><span style="color:#b48ead;">if </span><span>(
+</span></td></tr><tr><td>18</td><td><span>    </span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">bookingUserStatus </span><span>!= &quot;</span><span style="color:#a3be8c;">CanBook</span><span>&quot; &amp;&amp;
+</span></td></tr><tr><td>19</td><td><span>    </span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">bookingUserStatus </span><span>!= &quot;</span><span style="color:#a3be8c;">WaitingBookingOpensPremium</span><span>&quot;
+</span></td></tr><tr><td>20</td><td><span>  ) {
+</span></td></tr><tr><td>21</td><td><span>    </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">warn</span><span>(
+</span></td></tr><tr><td>22</td><td><span>      `</span><span style="color:#a3be8c;">Booking rejected its status is${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">bookingInfo</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">bookingUserStatus</span><span style="color:#a3be8c;">}</span><span>`,
+</span></td></tr><tr><td>23</td><td><span>    );
+</span></td></tr><tr><td>24</td><td><span>    </span><span style="color:#b48ead;">return</span><span>;
+</span></td></tr><tr><td>25</td><td><span>  }
+</span></td></tr><tr><td>26</td><td><span>
+</span></td></tr><tr><td>27</td><td><span>  </span><span style="color:#65737e;">// Check cancellationMinutesInAdvance. We should avoid booking for classes than can&#39;t be un-booked to avoid penalties!
+</span></td></tr><tr><td>28</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">startDateCET </span><span>= </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">stringToDateCET</span><span>(</span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">startDate</span><span>);
+</span></td></tr><tr><td>29</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">timeToClassStartInMinutes </span><span>= </span><span style="color:#bf616a;">startDateCET</span><span>.</span><span style="color:#8fa1b3;">diff</span><span>(
+</span></td></tr><tr><td>30</td><td><span>    </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">nowCET</span><span>(),
+</span></td></tr><tr><td>31</td><td><span>    &quot;</span><span style="color:#a3be8c;">minutes</span><span>&quot;,
+</span></td></tr><tr><td>32</td><td><span>  );
+</span></td></tr><tr><td>33</td><td><span>
+</span></td></tr><tr><td>34</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">timeToCancelBookingMinutes </span><span>=
+</span></td></tr><tr><td>35</td><td><span>    </span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">bookingInfo</span><span>.</span><span style="color:#bf616a;">cancellationMinutesInAdvance </span><span>+
+</span></td></tr><tr><td>36</td><td><span>    </span><span style="color:#bf616a;">EXTRA_TIME_CANCEL_BOOKING_IN_MINUTES</span><span>;
+</span></td></tr><tr><td>37</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">classCanBeCancelled </span><span>=
+</span></td></tr><tr><td>38</td><td><span>    </span><span style="color:#bf616a;">timeToClassStartInMinutes </span><span>&gt; </span><span style="color:#bf616a;">timeToCancelBookingMinutes</span><span>;
+</span></td></tr><tr><td>39</td><td><span>
+</span></td></tr><tr><td>40</td><td><span>  </span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">classCanBeCancelled</span><span>) {
+</span></td></tr><tr><td>41</td><td><span>    </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">warn</span><span>(
+</span></td></tr><tr><td>42</td><td><span>      `</span><span style="color:#a3be8c;">Booking rejected to avoid penalties, because class could not be un-booked. startDate=${</span><span style="color:#bf616a;">startDateCET</span><span style="color:#a3be8c;">} timeToClassStartInMinutes=${</span><span style="color:#bf616a;">timeToClassStartInMinutes</span><span style="color:#a3be8c;">} timeToCancelBookingMinutes=${</span><span style="color:#bf616a;">timeToCancelBookingMinutes</span><span style="color:#a3be8c;">}</span><span>`,
+</span></td></tr><tr><td>43</td><td><span>    );
+</span></td></tr><tr><td>44</td><td><span>
+</span></td></tr><tr><td>45</td><td><span>    </span><span style="color:#b48ead;">return</span><span>;
+</span></td></tr><tr><td>46</td><td><span>  }
+</span></td></tr><tr><td>47</td><td><span>
+</span></td></tr><tr><td>48</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">userCredentials </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">getUserCredentials</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>);
+</span></td></tr><tr><td>49</td><td><span>
+</span></td></tr><tr><td>50</td><td><span>  </span><span style="color:#b48ead;">let </span><span style="color:#bf616a;">loginData </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">gymApiClient</span><span>.</span><span style="color:#8fa1b3;">login</span><span>(
+</span></td></tr><tr><td>51</td><td><span>    </span><span style="color:#bf616a;">userCredentials</span><span>.</span><span style="color:#bf616a;">loginUsername</span><span>,
+</span></td></tr><tr><td>52</td><td><span>    </span><span style="color:#bf616a;">userCredentials</span><span>.</span><span style="color:#bf616a;">loginPassword</span><span>,
+</span></td></tr><tr><td>53</td><td><span>  );
+</span></td></tr><tr><td>54</td><td><span>
+</span></td></tr><tr><td>55</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">bookClassRequest </span><span>= {
+</span></td></tr><tr><td>56</td><td><span>    method: &quot;</span><span style="color:#a3be8c;">POST</span><span>&quot;,
+</span></td></tr><tr><td>57</td><td><span>    url: `</span><span style="color:#a3be8c;">${</span><span style="color:#bf616a;">BOOKING_API_BASE_URI</span><span style="color:#a3be8c;">}/core/calendarevent/${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.id}/book</span><span>`,
+</span></td></tr><tr><td>58</td><td><span>    headers: {
+</span></td></tr><tr><td>59</td><td><span>      Authorization: `</span><span style="color:#a3be8c;">Bearer ${</span><span style="color:#bf616a;">loginData</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">token</span><span style="color:#a3be8c;">}</span><span>`,
+</span></td></tr><tr><td>60</td><td><span>    },
+</span></td></tr><tr><td>61</td><td><span>    data: {
+</span></td></tr><tr><td>62</td><td><span>      partitionDate: </span><span style="color:#bf616a;">classDetails</span><span>.</span><span style="color:#bf616a;">partitionDate</span><span>,
+</span></td></tr><tr><td>63</td><td><span>      userId: </span><span style="color:#bf616a;">userCredentials</span><span>.</span><span style="color:#bf616a;">userId</span><span>,
+</span></td></tr><tr><td>64</td><td><span>    },
+</span></td></tr><tr><td>65</td><td><span>  };
+</span></td></tr><tr><td>66</td><td><span>
+</span></td></tr><tr><td>67</td><td><span>  </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">bookClassResponse </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">gymApiClient
+</span></td></tr><tr><td>68</td><td><span>    .</span><span style="color:#8fa1b3;">getHttpClient</span><span>()
+</span></td></tr><tr><td>69</td><td><span>    .</span><span style="color:#8fa1b3;">request</span><span>(</span><span style="color:#bf616a;">bookClassRequest</span><span>);
+</span></td></tr><tr><td>70</td><td><span>
+</span></td></tr><tr><td>71</td><td><span>  </span><span style="color:#b48ead;">if </span><span>(</span><span style="color:#bf616a;">gymApiClient</span><span>.</span><span style="color:#8fa1b3;">isResponseError</span><span>(</span><span style="color:#bf616a;">bookClassResponse</span><span>)) {
+</span></td></tr><tr><td>72</td><td><span>    </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">error</span><span>(
+</span></td></tr><tr><td>73</td><td><span>      `</span><span style="color:#a3be8c;">Unable to book class with id=${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.id} and partitionDate=${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">partitionDate</span><span style="color:#a3be8c;">}. Errors=${JSON.</span><span style="color:#96b5b4;">stringify</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">bookClassResponse</span><span style="color:#a3be8c;">.data.</span><span style="color:#bf616a;">errors</span><span style="color:#a3be8c;">)}</span><span>`,
+</span></td></tr><tr><td>74</td><td><span>    );
+</span></td></tr><tr><td>75</td><td><span>
+</span></td></tr><tr><td>76</td><td><span>    </span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">publishBookingFailedEvent</span><span>(
+</span></td></tr><tr><td>77</td><td><span>      </span><span style="color:#bf616a;">userAlias</span><span>,
+</span></td></tr><tr><td>78</td><td><span>      </span><span style="color:#bf616a;">classDetails</span><span>,
+</span></td></tr><tr><td>79</td><td><span>      </span><span style="color:#bf616a;">bookClassResponse</span><span>.data.</span><span style="color:#bf616a;">errors</span><span>,
+</span></td></tr><tr><td>80</td><td><span>    );
+</span></td></tr><tr><td>81</td><td><span>
+</span></td></tr><tr><td>82</td><td><span>    </span><span style="color:#b48ead;">return</span><span>;
+</span></td></tr><tr><td>83</td><td><span>  }
+</span></td></tr><tr><td>84</td><td><span>
+</span></td></tr><tr><td>85</td><td><span>  </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">debug</span><span>(
+</span></td></tr><tr><td>86</td><td><span>    `</span><span style="color:#a3be8c;">Successfully booked class with id=${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.id} and partitionDate=${</span><span style="color:#bf616a;">classDetails</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">partitionDate</span><span style="color:#a3be8c;">}</span><span>`,
+</span></td></tr><tr><td>87</td><td><span>  );
+</span></td></tr><tr><td>88</td><td><span>  </span><span style="color:#b48ead;">await </span><span style="color:#8fa1b3;">publishBookingCompletedEvent</span><span>(</span><span style="color:#bf616a;">userAlias</span><span>, </span><span style="color:#bf616a;">classDetails</span><span>);
+</span></td></tr><tr><td>89</td><td><span>};
+</span></td></tr></tbody></table></code></pre>
+<p>Lines <code>2-46</code> are meant to run some extended validation on the <code>ClassBookingAvailable</code> event received. After the usual userAlias check, the code makes sure that the class is in a valid state for booking (lines <code>16-25</code>), and that booking is avoided if there's no chance or a limited time window to un-bok it soon after (lines <code>27-46</code>). This is meant to mitigate the risk of penalties for the Gym's API user: if for 3 times in a row the user does not join a class that was previously booked, they are temporarily banned from booking new classes.</p>
+<p>From line <code>50</code> onwards the code takes care of logging the user in, booking the class specified on the received <code>ClassBookingAvailable</code> event, and ultimately publishing either a <code>ClassBookingCompleted</code> or <code>ClassBookingFailed</code> event.</p>
+<h3 id="what-could-go-wrong">What could go wrong</h3>
+<p><em>EventBridge</em> guarantees <strong>at least once</strong> delivery. This means that  my functions could be invoked multiple times for the same event.</p>
+<p>While this is a problem for both the <em>Scan</em> and <em>Book</em> function, it's probably more relevant for the latter:
+What happens if the <em>Book</em> function gets invoked multiple times with the same <code>ClassBookingAvailable</code> event? Even if the booking operation is <a href="https://developer.mozilla.org/en-US/docs/Glossary/Idempotent">idempotent</a> on the Gym's API (it seems that they have built some sort of idempotency mechanism based on the <code>id</code> and <code>partitionDate</code> of the booking), how to avoid that the same SMS gets sent multiple times?</p>
+<p>To mitigate these hiccups I should have made all my functions idempotent. Considering the overall context, I decided that this flaw was acceptable.</p>
+<p>Another problem is that EventBridge comes with 60 seconds precision, and sometimes the <em>Book</em> function could be invoked with a delay up to that value: this is usually not enough for the overcrowded classes that usually gets fully booked a bunch of seconds after the bookings are open. Again, since this was not the case of the class I was interested in, I decided to proceed. </p>
+<p>Let's now zoom on the common modules.</p>
+<h2 id="common-layer">Common layer</h2>
+<p>The common layer includes 3 modules:</p>
+<ul>
+<li>one that includes all the utilities, called <code>utils</code>;</li>
+<li>one that bundles the HTTP client to interact with the Gym's API, named <code>gymApiClient</code>;</li>
+<li>and finally, a <code>logging</code> module for custom logging purposes.</li>
+</ul>
+<p>While the whole code is available at <a href="https://github.com/dili91/gym-booking-assistant/tree/main/common/nodejs">my github repository</a>, here I want to highlight a few important functions bundled in the above mentioned modules. </p>
+<p>The <code>utils</code> modules exports 2 key methods (among the others) that are used to fetch generic configurations from <em>Systems Manager</em> (<code>getConfig</code>), or sensitive and user-specific credentials from <em>Secrets Manager</em> (<code>getUserCredentials</code>):</p>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span>module.exports = {
+</span><span>  </span><span style="color:#8fa1b3;">getConfig</span><span>: </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">name</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>    </span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">config</span><span>) {
+</span><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">parametersStoreResponse </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">serviceSystemManagerClient</span><span>.</span><span style="color:#96b5b4;">send</span><span>(
+</span><span>        new GetParameterCommand({
+</span><span>          Name: &quot;</span><span style="color:#a3be8c;">GymBookingAssistant</span><span>&quot;,
+</span><span>        }),
+</span><span>      );
+</span><span>
+</span><span>      </span><span style="color:#bf616a;">config </span><span>= JSON.</span><span style="color:#96b5b4;">parse</span><span>(</span><span style="color:#bf616a;">parametersStoreResponse</span><span>.</span><span style="color:#bf616a;">Parameter</span><span>.</span><span style="color:#bf616a;">Value</span><span>);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">value </span><span>= </span><span style="color:#bf616a;">config</span><span>[</span><span style="color:#bf616a;">name</span><span>];
+</span><span>    </span><span style="color:#b48ead;">if </span><span>(!</span><span style="color:#bf616a;">value</span><span>) {
+</span><span>      </span><span style="color:#b48ead;">throw </span><span>new Error(`</span><span style="color:#a3be8c;">Config &quot;${</span><span style="color:#bf616a;">name</span><span style="color:#a3be8c;">}&quot; not found.</span><span>`);
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">value</span><span>;
+</span><span>  },
+</span><span>
+</span><span>  </span><span style="color:#8fa1b3;">getUserCredentials</span><span>: </span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">userAlias</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">credentials </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">secretsManagerClient</span><span>.</span><span style="color:#96b5b4;">send</span><span>(
+</span><span>      new GetSecretValueCommand({
+</span><span>        SecretId: `</span><span style="color:#a3be8c;">GymBookingAssistant/Credentials/${</span><span style="color:#bf616a;">userAlias</span><span style="color:#a3be8c;">}</span><span>`,
+</span><span>      }),
+</span><span>    );
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return </span><span>JSON.</span><span style="color:#96b5b4;">parse</span><span>(</span><span style="color:#bf616a;">credentials</span><span>.</span><span style="color:#bf616a;">SecretString</span><span>);
+</span><span>  },
+</span><span>
+</span><span>  </span><span style="color:#65737e;">// other functions...
+</span><span>};
+</span></code></pre>
+<p>The <code>gymApiClient</code> modules bundles all the logic that interacts with the Gym's API server and exports 3 methods: </p>
+<ul>
+<li>a <code>getHttpClient</code> method that yields an instance of the HTTP client (built on top of <a href="https://axios-http.com/">Axios</a>) to be used with the Gym's API, already enriched with a bunch of interceptors meant for request/response logging or to set some defaults HTTP headers. The returned HTTP client instance can be used to fire multiple different API calls, as the search and book interactions that we've seen above.</li>
+<li>an <code>isResponseError</code> utility that takes an <a href="https://axios-http.com/docs/res_schema">Axios HTTP response</a> as parameters and tells whether it contains an error or not;</li>
+<li>And a <code>login</code> method, that reuses the above <code>getHttpClient</code>, and fires a login call to the Gym's server.</li>
+</ul>
+<pre data-linenos data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><table><tbody><tr><td>1</td><td><span>module.exports = {
+</span></td></tr><tr><td>2</td><td><span>  </span><span style="color:#8fa1b3;">login</span><span>: </span><span style="color:#b48ead;">async function </span><span>(</span><span style="color:#bf616a;">username</span><span>, </span><span style="color:#bf616a;">password</span><span>) {
+</span></td></tr><tr><td>3</td><td><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">APPLICATION_ID </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">getConfig</span><span>(&quot;</span><span style="color:#a3be8c;">applicationId</span><span>&quot;);
+</span></td></tr><tr><td>4</td><td><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">LOGIN_DOMAIN </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">getConfig</span><span>(&quot;</span><span style="color:#a3be8c;">loginDomain</span><span>&quot;);
+</span></td></tr><tr><td>5</td><td><span>
+</span></td></tr><tr><td>6</td><td><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">loginRequest </span><span>= {
+</span></td></tr><tr><td>7</td><td><span>      method: &quot;</span><span style="color:#a3be8c;">POST</span><span>&quot;,
+</span></td></tr><tr><td>8</td><td><span>      url: `</span><span style="color:#a3be8c;">${</span><span style="color:#bf616a;">CORE_API_BASE_URI</span><span style="color:#a3be8c;">}/Application/${</span><span style="color:#bf616a;">APPLICATION_ID</span><span style="color:#a3be8c;">}/Login</span><span>`,
+</span></td></tr><tr><td>9</td><td><span>      data: {
+</span></td></tr><tr><td>10</td><td><span>        domain: </span><span style="color:#bf616a;">LOGIN_DOMAIN</span><span>,
+</span></td></tr><tr><td>11</td><td><span>        keepMeLoggedIn: </span><span style="color:#d08770;">true</span><span>,
+</span></td></tr><tr><td>12</td><td><span>        username: </span><span style="color:#bf616a;">username</span><span>,
+</span></td></tr><tr><td>13</td><td><span>        password: </span><span style="color:#bf616a;">password</span><span>,
+</span></td></tr><tr><td>14</td><td><span>      },
+</span></td></tr><tr><td>15</td><td><span>    };
+</span></td></tr><tr><td>16</td><td><span>
+</span></td></tr><tr><td>17</td><td><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">loginResponse </span><span>= </span><span style="color:#b48ead;">await </span><span>module.exports
+</span></td></tr><tr><td>18</td><td><span>      .</span><span style="color:#8fa1b3;">getHttpClient</span><span>()
+</span></td></tr><tr><td>19</td><td><span>      .</span><span style="color:#8fa1b3;">request</span><span>(</span><span style="color:#bf616a;">loginRequest</span><span>);
+</span></td></tr><tr><td>20</td><td><span>
+</span></td></tr><tr><td>21</td><td><span>    </span><span style="color:#b48ead;">if </span><span>(module.exports.</span><span style="color:#8fa1b3;">isResponseError</span><span>(</span><span style="color:#bf616a;">loginResponse</span><span>)) {
+</span></td></tr><tr><td>22</td><td><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">errorMsg </span><span>= `</span><span style="color:#a3be8c;">Unable to login: ${JSON.</span><span style="color:#96b5b4;">stringify</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">loginResponse</span><span style="color:#a3be8c;">.data)}. Aborting</span><span>`;
+</span></td></tr><tr><td>23</td><td><span>      </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">error</span><span>(</span><span style="color:#bf616a;">errorMsg</span><span>);
+</span></td></tr><tr><td>24</td><td><span>
+</span></td></tr><tr><td>25</td><td><span>      </span><span style="color:#b48ead;">throw </span><span>new Error(</span><span style="color:#bf616a;">errorMsg</span><span>);
+</span></td></tr><tr><td>26</td><td><span>    }
+</span></td></tr><tr><td>27</td><td><span>
+</span></td></tr><tr><td>28</td><td><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">loginResponse</span><span>.data;
+</span></td></tr><tr><td>29</td><td><span>  },
+</span></td></tr><tr><td>30</td><td><span>
+</span></td></tr><tr><td>31</td><td><span>  </span><span style="color:#8fa1b3;">getHttpClient</span><span>: </span><span style="color:#b48ead;">function </span><span>() {
+</span></td></tr><tr><td>32</td><td><span>    </span><span style="color:#b48ead;">let </span><span style="color:#bf616a;">client </span><span>= </span><span style="color:#bf616a;">axios</span><span>.</span><span style="color:#8fa1b3;">create</span><span>();
+</span></td></tr><tr><td>33</td><td><span>
+</span></td></tr><tr><td>34</td><td><span>    </span><span style="color:#bf616a;">client</span><span>.</span><span style="color:#bf616a;">interceptors</span><span>.</span><span style="color:#bf616a;">request</span><span>.</span><span style="color:#8fa1b3;">use</span><span>(</span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">request</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span></td></tr><tr><td>35</td><td><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">CLIENT_ID </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">utils</span><span>.</span><span style="color:#8fa1b3;">getConfig</span><span>(&quot;</span><span style="color:#a3be8c;">clientId</span><span>&quot;);
+</span></td></tr><tr><td>36</td><td><span>      </span><span style="color:#bf616a;">request</span><span>.headers[&quot;</span><span style="color:#a3be8c;">x-mwapps-client</span><span>&quot;] = </span><span style="color:#bf616a;">CLIENT_ID</span><span>;
+</span></td></tr><tr><td>37</td><td><span>      </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">request</span><span>;
+</span></td></tr><tr><td>38</td><td><span>    });
+</span></td></tr><tr><td>39</td><td><span>
+</span></td></tr><tr><td>40</td><td><span>    </span><span style="color:#bf616a;">client</span><span>.</span><span style="color:#bf616a;">interceptors</span><span>.</span><span style="color:#bf616a;">request</span><span>.</span><span style="color:#8fa1b3;">use</span><span>(</span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">request</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span></td></tr><tr><td>41</td><td><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">maskedPayload </span><span>= </span><span style="color:#bf616a;">maskData</span><span>.</span><span style="color:#8fa1b3;">maskJSON2</span><span>(
+</span></td></tr><tr><td>42</td><td><span>        </span><span style="color:#bf616a;">request</span><span>.data,
+</span></td></tr><tr><td>43</td><td><span>        </span><span style="color:#bf616a;">JSON_MASKING_CONFIG</span><span>,
+</span></td></tr><tr><td>44</td><td><span>      );
+</span></td></tr><tr><td>45</td><td><span>      </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">debug</span><span>(
+</span></td></tr><tr><td>46</td><td><span>        `</span><span style="color:#a3be8c;">&gt;&gt;&gt; ${</span><span style="color:#bf616a;">request</span><span style="color:#a3be8c;">.method.</span><span style="color:#96b5b4;">toUpperCase</span><span style="color:#a3be8c;">()} ${</span><span style="color:#bf616a;">request</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">url</span><span style="color:#a3be8c;">}
+</span></td></tr><tr><td>47</td><td><span style="color:#a3be8c;">        </span><span style="color:#96b5b4;">\n</span><span style="color:#a3be8c;">Params: ${JSON.</span><span style="color:#96b5b4;">stringify</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">request</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">params</span><span style="color:#a3be8c;">, </span><span style="color:#d08770;">null</span><span style="color:#a3be8c;">, </span><span style="color:#d08770;">2</span><span style="color:#a3be8c;">)}
+</span></td></tr><tr><td>48</td><td><span style="color:#a3be8c;">        </span><span style="color:#96b5b4;">\n</span><span style="color:#a3be8c;">Body:
+</span></td></tr><tr><td>49</td><td><span style="color:#a3be8c;">        </span><span style="color:#96b5b4;">\n</span><span style="color:#a3be8c;">${JSON.</span><span style="color:#96b5b4;">stringify</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">maskedPayload</span><span style="color:#a3be8c;">, </span><span style="color:#d08770;">null</span><span style="color:#a3be8c;">, </span><span style="color:#d08770;">2</span><span style="color:#a3be8c;">)}</span><span>`,
+</span></td></tr><tr><td>50</td><td><span>      );
+</span></td></tr><tr><td>51</td><td><span>      </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">request</span><span>;
+</span></td></tr><tr><td>52</td><td><span>    });
+</span></td></tr><tr><td>53</td><td><span>
+</span></td></tr><tr><td>54</td><td><span>    </span><span style="color:#bf616a;">client</span><span>.</span><span style="color:#bf616a;">interceptors</span><span>.</span><span style="color:#bf616a;">response</span><span>.</span><span style="color:#8fa1b3;">use</span><span>(</span><span style="color:#b48ead;">async </span><span>(</span><span style="color:#bf616a;">response</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span></td></tr><tr><td>55</td><td><span>      </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">maskedPayload </span><span>= </span><span style="color:#bf616a;">maskData</span><span>.</span><span style="color:#8fa1b3;">maskJSON2</span><span>(
+</span></td></tr><tr><td>56</td><td><span>        </span><span style="color:#bf616a;">response</span><span>.data,
+</span></td></tr><tr><td>57</td><td><span>        </span><span style="color:#bf616a;">JSON_MASKING_CONFIG</span><span>,
+</span></td></tr><tr><td>58</td><td><span>      );
+</span></td></tr><tr><td>59</td><td><span>      </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">logging</span><span>.</span><span style="color:#8fa1b3;">debug</span><span>(
+</span></td></tr><tr><td>60</td><td><span>        `</span><span style="color:#a3be8c;">&lt;&lt;&lt; ${</span><span style="color:#bf616a;">response</span><span style="color:#a3be8c;">.status} ${</span><span style="color:#bf616a;">response</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">request</span><span style="color:#a3be8c;">.method.</span><span style="color:#96b5b4;">toUpperCase</span><span style="color:#a3be8c;">()} ${</span><span style="color:#bf616a;">response</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">config</span><span style="color:#a3be8c;">.</span><span style="color:#bf616a;">url</span><span style="color:#a3be8c;">}
+</span></td></tr><tr><td>61</td><td><span style="color:#a3be8c;">        </span><span style="color:#96b5b4;">\n</span><span style="color:#a3be8c;">Body:
+</span></td></tr><tr><td>62</td><td><span style="color:#a3be8c;">        </span><span style="color:#96b5b4;">\n</span><span style="color:#a3be8c;">${</span><span style="color:#bf616a;">utils</span><span style="color:#a3be8c;">.</span><span style="color:#8fa1b3;">truncateString</span><span style="color:#a3be8c;">(JSON.</span><span style="color:#96b5b4;">stringify</span><span style="color:#a3be8c;">(</span><span style="color:#bf616a;">maskedPayload</span><span style="color:#a3be8c;">, </span><span style="color:#d08770;">null</span><span style="color:#a3be8c;">, </span><span style="color:#d08770;">2</span><span style="color:#a3be8c;">), </span><span style="color:#bf616a;">RESPONSE_BODY_MAX_SIZE_LOGGED</span><span style="color:#a3be8c;">)}
+</span></td></tr><tr><td>63</td><td><span style="color:#a3be8c;">        </span><span style="color:#96b5b4;">\n\n</span><span>`,
+</span></td></tr><tr><td>64</td><td><span>      );
+</span></td></tr><tr><td>65</td><td><span>      </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">response</span><span>;
+</span></td></tr><tr><td>66</td><td><span>    });
+</span></td></tr><tr><td>67</td><td><span>
+</span></td></tr><tr><td>68</td><td><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">client</span><span>;
+</span></td></tr><tr><td>69</td><td><span>  },
+</span></td></tr><tr><td>70</td><td><span>
+</span></td></tr><tr><td>71</td><td><span>  </span><span style="color:#8fa1b3;">isResponseError</span><span>: (</span><span style="color:#bf616a;">response</span><span>) </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span></td></tr><tr><td>72</td><td><span>    </span><span style="color:#b48ead;">return </span><span>(
+</span></td></tr><tr><td>73</td><td><span>      </span><span style="color:#bf616a;">response</span><span>.status &lt; </span><span style="color:#d08770;">200 </span><span>||
+</span></td></tr><tr><td>74</td><td><span>      </span><span style="color:#bf616a;">response</span><span>.status &gt;= </span><span style="color:#d08770;">300 </span><span>||
+</span></td></tr><tr><td>75</td><td><span>      (</span><span style="color:#bf616a;">response</span><span>.data != </span><span style="color:#d08770;">null </span><span>&amp;&amp; </span><span style="color:#bf616a;">response</span><span>.data.</span><span style="color:#bf616a;">errors </span><span>!= </span><span style="color:#d08770;">null</span><span>)
+</span></td></tr><tr><td>76</td><td><span>    );
+</span></td></tr><tr><td>77</td><td><span>  },
+</span></td></tr><tr><td>78</td><td><span>};
+</span></td></tr></tbody></table></code></pre>
+<p>As visible on lines <code>41-44</code> and <code>55-58</code>, while logging HTTP request and responses the code is leveraging a masking module (<a href="https://www.npmjs.com/package/maskdata">maskdata</a>) to avoid leaking PII or other sensitive information, with the help of the following configuration: </p>
+<pre data-lang="js" style="background-color:#2b303b;color:#c0c5ce;" class="language-js "><code class="language-js" data-lang="js"><span style="color:#b48ead;">const </span><span style="color:#bf616a;">JSON_MASKING_CONFIG </span><span>= {
+</span><span>  passwordFields: [&quot;</span><span style="color:#a3be8c;">password</span><span>&quot;],
+</span><span>  uuidFields: [&quot;</span><span style="color:#a3be8c;">data.userContext.credentialId</span><span>&quot;, &quot;</span><span style="color:#a3be8c;">data.credentialId</span><span>&quot;],
+</span><span>  emailFields: [
+</span><span>    &quot;</span><span style="color:#a3be8c;">username</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">data.userContext.accountUsername</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">data.userContext.email</span><span>&quot;,
+</span><span>  ],
+</span><span>  phoneFields: [&quot;</span><span style="color:#a3be8c;">data.userContext.mobilePhoneNumber</span><span>&quot;],
+</span><span>  genericStrings: [
+</span><span>    {
+</span><span>      fields: [
+</span><span>        &quot;</span><span style="color:#a3be8c;">token</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">data.userContext.firstName</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">data.userContext.address1</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">data.userContext.lastName</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">data.userContext.nickName</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">data.userContext.birthDate</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">data.userContext.displayBirthDate</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">data.userContext.pictureUrl</span><span>&quot;,
+</span><span>        &quot;</span><span style="color:#a3be8c;">data.userContext.thumbPictureUrl</span><span>&quot;,
+</span><span>      ],
+</span><span>    },
+</span><span>  ],
+</span><span>};
+</span></code></pre>
+<h3 id="all-that-glitters-is-not-gold">All that glitters is not gold</h3>
+<p>While great in theory, <em>Common layers</em> came with a few traps.</p>
+<p>Firstly, I had to structure the code to mimic what the <em>Lambda</em> wrapper was expecting: as visible in the source code, an extra <code>nodejs</code> directory is required to bundle the common modules. Why one should bother with this Lambda-specific implementation detail while developing locally?</p>
+<p>Most importantly, the fact that the code was expecting common modules to be globally available on the host made the development experience a bit frustrating. To make the code work locally, I had to play with <a href="https://github.com/dili91/gym-booking-assistant/blob/main/justfile#L11">symbolic links</a> 🫤.</p>
+<p>Finally, let's have a look at what I did for delivering the SMS with the information about the completed booking.</p>
+<h2 id="sms-notification">SMS notification</h2>
+<p>As mentioned already in a previous chapter I decided to implement the notification step simply with the help of an EventBridge rule and SNS Topic:</p>
+<p><img src="/assets/images/posts/2024-07-28_automating-my-gym-bookings-with-a-serverless-assistant/eventbridge-completed-bookings.png" alt="EventBridge rule for ClassBookingCompleted events for the user andrea" /></p>
+<p>The rule targets an SNS Topic, whose input is manipulated by an <em>EventBridge</em> <a href="https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-input-transformer-tutorial.html">Input transformer</a> on AWS, to create a human friendly message:</p>
+<p><img src="/assets/images/posts/2024-07-28_automating-my-gym-bookings-with-a-serverless-assistant/eventbridge-completed-bookings-sns-target.png" alt="EventBridge rule for ClassBookingCompleted events for the user andrea, SNS target" /></p>
+<p>Before reaching the SNS topic the input is transformed with the help of an <em>EventBridge</em> <a href="https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-input-transformer-tutorial.html">Input transformer </a> on AWS, to create a human friendly message. The transformer creates an intermediate JSON object with the following structure and values:</p>
+<pre data-lang="json" style="background-color:#2b303b;color:#c0c5ce;" class="language-json "><code class="language-json" data-lang="json"><span>{
+</span><span>  &quot;</span><span style="color:#a3be8c;">classId</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">$.detail.class.id</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">className</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">$.detail.class.name</span><span>&quot;,
+</span><span>  &quot;</span><span style="color:#a3be8c;">classStartDate</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">$.detail.class.startDate</span><span>&quot;
+</span><span>}
+</span></code></pre>
+<p>and ultimately builds a human friendly SMS payload with the following template:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>La classe &lt;className&gt; in programma il &lt;classStartDate&gt; è stata prenotata! Se non vuoi partecipare, ricorda di annullare la prenotazione per evitare penalizzazioni.
+</span></code></pre>
+<h3 id="quota-request-increase-what">Quota request increase what?</h3>
+<p>After a bunch of successful deliveries, all of sudden all my SMSes started failing. After enabling some basic logging (Why isn't that enabled by default?) I realized that I had reached my monthly budget for SMSes!</p>
+<p>How could that be true, considering that: </p>
+<ul>
+<li>I was using the Sandbox environment and only sending to a trusted target (my mobile number)</li>
+<li>I had sent between 5 and 10 SMSes</li>
+</ul>
+<p>Very surprisingly, it turned out that the default monthly budget for sending SMS is 1 USD! 😅</p>
+<p>So, I had to raise a budget increase request and after a few ping-pong chats with the AWS support I was ultimately able to convince them that there's wasn't a company, there wasn't a site and much less there wasn't a process to opt-out for those messages...</p>
+<h1 id="final-thoughts">Final thoughts</h1>
+<p>That's it!</p>
+<p>While the project I’ve built may not be memorable or flawless, I genuinely enjoyed the process of creating it. Though I may not use it regularly to book my classes, it provided me with an opportunity to dive deeper into the serverless space on AWS, beyond what I typically encounter at work. Writing about this experience also encouraged me to reflect critically on the decisions I made, considering both their benefits and limitations. I may not be entirely proud of the final product, but I’m certainly happy with the valuable lessons I’ve learned along the way.</p>
+
+  </div>
+
+	
+
+  <div class="pagination">
+  	<a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/" class="left arrow">&#8592;</a>
+		<a href="#" class="top">Top</a>
+		<a href="https://adilisio.com/posts/yet-another-connection-reset/" class="right arrow">&#8594;</a>
+  </div>
+
+  </main>
+
+  
+  <footer>
+    <span></span>
+  </footer>
+  
+</body>
+</html>

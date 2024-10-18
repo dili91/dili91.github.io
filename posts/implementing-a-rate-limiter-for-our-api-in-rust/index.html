@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  
+<title>Implementing a rate limiter for our API in Rust | Andrea Di Lisio</title>
+
+
+
+<meta property="og:title" content="Implementing a rate limiter for our API in Rust">
+
+
+
+<meta name="author" content="Andrea Di Lisio">
+
+
+<meta property="og:locale" content="en-US">
+
+
+<meta name="description" content="Andrea Di Lisio&#x27;s online resume and blog">
+<meta property="og:description" content="Andrea Di Lisio&#x27;s online resume and blog">
+
+
+
+<link rel="canonical" href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/">
+<meta property="og:url" content="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/">
+
+
+
+<meta property="og:site_name" content="Andrea Di Lisio" />
+
+
+
+
+
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2023-02-06T00:00:00+00:00">
+
+
+
+  <link rel="prev" href="https://adilisio.com/posts/sequentially-starting-containers-in-a-kubernetes-pod/">
+
+
+
+  <link rel="next" href="https://adilisio.com/posts/fooled-by-prometheus-rate-function/">
+
+
+
+  <meta name="twitter:card" content="summary">
+
+
+
+  <meta property="twitter:title" content="Implementing a rate limiter for our API in Rust">
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+{
+  "author": {
+    "@type":"Person",
+	  "name":"Andrea Di Lisio",
+  },
+  "description": "Andrea Di Lisio&#x27;s online resume and blog",
+  "url": "https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/",
+  "@context":"https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Implementing a rate limiter for our API in Rust"
+  
+    
+    
+      "datePublished":"2023-02-06T00:00:00+00:00",
+    
+    "mainEntityOfPage":{
+      "@type":"WebPage",
+      "@id":"https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/"
+    },
+  
+}
+</script>
+
+  
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="https://adilisio.com/rss.xml">
+  
+
+  <link rel="stylesheet" href="https://adilisio.com/main.css">
+  <link rel="stylesheet" href="https://adilisio.com/custom.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Libre+Baskerville:400,400i,700">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="https://adilisio.com/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://adilisio.com/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://adilisio.com/assets/apple-touch-icon.png">
+
+  
+    <link type="application/atom+xml" rel="alternate" href="https://adilisio.com/rss.xml" title="Andrea Di Lisio" />
+  
+
+  
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2G3RGMKL8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D2G3RGMKL8');
+    </script>
+  
+
+  
+  
+</head>
+
+<body>
+  
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="https://adilisio.com/">
+        <h2 class="nav-title">Andrea Di Lisio</h2>
+      </a>
+      <ul>
+        <li><a href="https://adilisio.com/">Resume</a></li>
+        <li><a href="https://adilisio.com/posts">Posts</a></li>
+        <li><a target="_blank" href="https://github.com/dili91">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+
+  <main>
+    
+  <div class="post">
+  	<div class="post-info">
+  		<span>Written by</span> Andrea Di Lisio<br>
+  		<span>on&nbsp;</span><time datetime="2023-02-06">February  6, 2023</time>
+  	</div>
+  	<h1 class="post-title">Implementing a rate limiter for our API in Rust</h1>
+  	<div class="post-line"></div>
+  	<p><img src="/assets/images/posts/2023-01-15_implementing-a-rate-limiter-for-our-api-in-rust/speed.jpg" alt="Speed" />
+<br/></p>
+<p>In this blog post I want to talk about rate limiting and why you should probably care in the context of APIs development. </p>
+<p>The first half I'll focus on the principles of rate limiting and the most common solutions. Finally, I'll go through how to build a rate limiter, written in Rust and based on Redis.</p>
+<!-- no toc -->
+<h1 id="table-of-contents">Table of contents <!-- omit in toc --></h1>
+<p>Here is the complete list of topics I'll touch in this article:</p>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#what-is-rate-limiting">What is rate limiting</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-focus">Our focus</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#why-rate-limiting-is-important">Why rate limiting is important</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#a-shield-for-our-infrastructure">A shield for our infrastructure</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#to-meet-our-quality-standards">To meet our quality standards</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#for-service-quotas">For service quotas</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-billing-guard">Our billing guard</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#local-vs-distributed">Local vs distributed</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#known-algorithms">Known algorithms</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#token-bucket">Token bucket</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#leaky-bucket">Leaky bucket</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#fixed-window">Fixed window</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#sliding-window">Sliding window</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#expressiveness-at-the-api-level">Expressiveness at the API level</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#building-a-rate-limiter">Building a rate limiter</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-requirements">Our requirements</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-tech-stack">Our tech stack</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#remote-state-management">Remote state management</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#why-rust">Why Rust</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#github-repository">Github repository</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#implementation-details">Implementation details</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-main-trait">Our main trait</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-rate-limiter-instance">Our rate limiter instance</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-algorithm">Our algorithm</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#on-the-shoulder-of-redis">On the shoulder of Redis</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-trait-implemented">Our trait implemented</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#the-beauty-of-error-handling-in-rust">The beauty of error handling in Rust</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#testing-our-library">Testing our library</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#using-it">Using it</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-pilot-project">Our pilot project</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#building-blocks">Building blocks</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#actix-middlewares-a-tldr"><em>Actix</em> middlewares, a <code>TLDR;</code></a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#injecting-our-rate-limiter">Injecting our rate limiter</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#configuring-it">Configuring it</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#testing-our-setup">Testing our setup</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#basic-manual-tests">Basic, manual tests</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#simulating-a-burst-of-request">Simulating a burst of request</a>
+<ul>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#docker-compose-setup">Docker compose setup</a></li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#generating-load-with-k6">Generating load with <code>k6</code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#bonus-points-sliding-window-algorithm">Bonus points: <em>Sliding window</em> algorithm</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#final-considerations">Final considerations</a></li>
+</ul>
+<p>Let's start!</p>
+<h1 id="what-is-rate-limiting">What is rate limiting</h1>
+<p>Rate limiting is a technique used to make sure that an operation/service is executed/requested
+within certain limits. Basically, it's a defensive measure that prevents the excessive consumption of 
+a resource. </p>
+<h2 id="our-focus">Our focus</h2>
+<p>Whilst the principles of rate limiting can be applied to a wide range of disciplines,
+in this article I'll focus on its use in the context of software engineering, specifically in 
+the context of API development.</p>
+<h2 id="why-rate-limiting-is-important">Why rate limiting is important</h2>
+<p>There are multiple reasons to adopt rate limiting on your services, let's see the main ones.</p>
+<h3 id="a-shield-for-our-infrastructure">A shield for our infrastructure</h3>
+<p>The most common and basic need is to protect our services from resources starvation. Let's say that one of our REST endpoint internally deals with some heavy database query, or does an expensive network call to an enterprise service bus, which is constantly under high pressure - not a very infrequent scenario. In such conditions, rate limiting is a simple yet powerful trick to prevent undesired, self-induced denial of service and cascading failures.</p>
+<h3 id="to-meet-our-quality-standards">To meet our quality standards</h3>
+<p>Keeping control of the maximum allowed requests on our services does not simply shield the underlying infrastructure, but also help us meeting the desired availability and performance goals, thus the quality of our service as experienced by our customers. If we know what's our system breaking point, there's no point in letting our traffic reaching that, as we know that our services would not behave as good as when in normal circumstances.</p>
+<h3 id="for-service-quotas">For service quotas</h3>
+<p>Rate limiting relates as well to the concept of service quotas. Perhaps we want our service to allow a different rate of requests based on the pricing plan on which our users are running. Or, since we know that our service is used worldwide by millions of people, we want to provide everybody a reasonable and fair experience, without affecting other consumers.</p>
+<h3 id="our-billing-guard">Our billing guard</h3>
+<p>Last but not least, rate limiting is also our friend when it comes to save some money. This is particularly relevant in the context of infrastructures hosted on cloud providers, that give us 
+the option to <em>infinitely</em> scale our services, either vertically or horizontally. Defining a maximum of parallel requests for our service is a simple yet effective way to prevent an auto scaling rule to completely drain our budget.</p>
+<h2 id="local-vs-distributed">Local vs distributed</h2>
+<p>In the world of distributed systems, we must differentiate between local and distributed rate limiters implementations: <em>local</em> refers to solutions which are self-contained on a single service instance or replica, thus having a local state. With <em>distributed</em> instead we mean a component whose state is remote and shared across different service units, independent from each other.</p>
+<figure>
+  <img src="/assets/images/posts/2023-01-15_implementing-a-rate-limiter-for-our-api-in-rust/rate_limiter_local.png" alt="Local rate limiter">
+  <figcaption>Local state rate limiters</figcaption>
+</figure>
+<p>Local rate limiters are usually simpler to implement: their state is kept in the local, ephemeral memory of a specif service instance.</p>
+<p>As each rate limiter instance is isolated, we don't have to care about synchronizing accesses/changes to the internal state across multiple services, but <em>just</em> across multiple threads/listeners. Choosing a language that offers a strong support for working in a multi threaded context (like Rust, for instance) is already half the battle.</p>
+<p>Local/in-memory rate limiters might be a good fit if:</p>
+<ul>
+<li>In the unlikely case you run a single instance of your service; </li>
+<li>You have some sort of session stickiness in place that lets you route requests coming from the same origin to the same instances;</li>
+<li>You're mostly concerned with protecting your infrastructure and keep control of your cloud provider billing; You don't care much if one of your customers exceeds its service quotas/limits;</li>
+<li>You're doing a <em>POC</em> and you want to start simple and progressively improve;</li>
+</ul>
+<p>Distributed rate limiters are instead a different beast to tame. First of all, unlike local ones, they have to store their state in a shared cache or a low-latency storage system, like a NoSQL database.</p>
+<p>As such, distributed rate limiters usually come with an extra provisioning effort as well as an operational and hosting cost. Moreover, compared to in-memory solutions, they're way more exposed to the likelihood of race conditions, as the same origins/clients can fire multiple simultaneous requests to different servers which are internally competing for the same resources. Locking, either pessimistic or optimistic, or both combined, is an opinionated approach mitigate/solve this kind of issues.</p>
+<p>That being said, distributed rate limiters are a much better fit for proper service quotas checks, and generally in service oriented/microservices architectures, usually made of ephemeral, stateless and round-robin load balanced service instances/pods.</p>
+<figure>
+  <img src="/assets/images/posts/2023-01-15_implementing-a-rate-limiter-for-our-api-in-rust/rate_limiter_distributed.png" alt="Distributed rate limiter">
+  <figcaption>Remote state rate limiters</figcaption>
+</figure>
+<h2 id="known-algorithms">Known algorithms</h2>
+<p>As far as I'm aware, there are 4 main, well-known algorithms for building a rate limiter.</p>
+<h3 id="token-bucket">Token bucket</h3>
+<p>The <em>Token bucket</em> algorithm is probably the simplest to reason about amongst the 4 algorithms. A token bucket is a container with a prefixed size, where each token relates to a request. The bucket is refilled at a predefined, fixed rate and it can contain a number of tokens up to its size. When a request comes in, if there's at least one token, it consumes a token and executes normally. Alternatively, if there are no tokens to consume, the request is dropped.</p>
+<p>The biggest advantage of this algorithm is its flexibility: it's a great fit for both regular traffic and bursts of requests in short periods of time. On the flip side, the implementation of its refill mechanism might not be so simple, and its <em>bucket size</em> and <em>refill rate</em> configurations might be a bit tricky to tune.</p>
+<p>It's widely adopted in the industry, including by big players like <a href="https://stripe.com/blog/rate-limiters">Stripe</a> or <a href="https://partners.deliveroo.com/docs/#data-api-response-codes">Deliveroo</a>.</p>
+<h3 id="leaky-bucket">Leaky bucket</h3>
+<p>The <em>Leaky bucket</em> algorithm is similar to the <em>Token bucket</em> one, but it executes requests at a regular rate with the help of a processing <em>FIFO</em> queue. When a request comes in, the algorithm checks the state of the queue: if it's full, the request is dropped, otherwise it's added at the end of the queue.</p>
+<p>Similarly to the previous algorithm, it comes with two parameters: <em>queue size</em> and <em>outflow rate</em>, representing respectively the maximum number of requests that a rate limiter can handle and the (constant) execution rate of our requests.</p>
+<p>Due to its internals, this algorithm is a perfect fit for use cases with a kind of stable rate of requests, or when you can afford processing requests at constant rate, regardless of the traffic experienced at the edges of your service. If your application has to deal with frequent and irregular burst of requests, by using a leaky bucket rate limiter you might end up dropping a non negligible amount of requests.</p>
+<p><a href="https://shopify.dev/api/usage/rate-limits#the-leaky-bucket-algorithm">Shopify</a> uses this algorithm on their APIs.</p>
+<h3 id="fixed-window">Fixed window</h3>
+<p>Differently from the above 2 approaches, this algorithms divides the timeline into <em>fix-sized time windows</em> with a predefined maximum of requests supported for each of them. When a request arrives, it increments a counter representing the number of requests executed in the same window. If the updated counter is higher than the predefined threshold, the request is dropped, otherwise it can execute. </p>
+<p>The biggest advantages of this approach are its simplicity and its low memory footprint. On the other side, burst of traffic at the edges of two adjacent time windows can lead to the execution of more requests than the ones defined by our quotas. With the help of an example, let's imagine a window size 5 and a duration of 1 minute. As time windows are independent from each other, there's nothing that could prevent 10 requests happening between <code>17:03:58</code> and <code>17:04:05</code>. From the perspective of our algorithm such traffic would be totally legit, as we would handle five request in each of the <code>17:04</code> and <code>17:05</code> windows, but we would end up accepting 10 requests in approximately 7 seconds, which might be inconvenient if not unacceptable for our use case.</p>
+<figure>
+  <img src="/assets/images/posts/2023-01-15_implementing-a-rate-limiter-for-our-api-in-rust/rate_limiter_overflow.png" alt="Limits overflow">
+  <figcaption>request limits overflow sample</figcaption>
+</figure>
+<h3 id="sliding-window">Sliding window</h3>
+<p>The <em>Sliding window</em> algorithm tries to improve the previous approach by keeping track of the history of requests. When a request comes in, it subtracts the window duration to the current timestamp and removes all the existing requests which are older than the newly computed window. Then, it adds the new timestamp to the history of requests and finally checks whether the request can execute or not: if the counter of request, including the current one, is same or lower than the the allowed maximum, the request is accepted. Otherwise, it's dropped.</p>
+<figure>
+  <img src="/assets/images/posts/2023-01-15_implementing-a-rate-limiter-for-our-api-in-rust/rate_limiter_sliding_window.png" alt="Sliding window">
+  <br><figcaption>Sliding window algorithm</figcaption>
+</figure>
+<p>The major drawback of this algorithm is its potential impact on memory, especially especially if you have a long window duration (eg: hours).</p>
+<p><a href="https://blog.cloudflare.com/counting-things-a-lot-of-different-things/">Cloudflare</a> leverages a sliding window - though improved, memory efficient - algorithm to mitigate L7 DDoS attacks.</p>
+<h2 id="expressiveness-at-the-api-level">Expressiveness at the API level</h2>
+<p>Whilst there are multiple ways to implement a rate limiter, how rate limiting errors are expressed at the API level is quite standard. </p>
+<p>Back in 2012 the <a href="https://www.ietf.org/">IETF</a> officially introduced a new <code>429</code> HTTP status code and a <code>Retry-in</code> response header precisely for this purpose.</p>
+<p><a href="https://www.rfc-editor.org/rfc/rfc6585#section-4">RFC 6585</a> states that </p>
+<blockquote>
+<p>The 429 status code indicates that the user has sent too many
+requests in a given amount of time (&quot;rate limiting&quot;). </p>
+<p>The response representations <strong>SHOULD</strong> include details explaining the condition, and <strong>MAY</strong> include a <code>Retry-After</code> header indicating how long to wait before making a new request.</p>
+</blockquote>
+<p>The combination of the HTTP status code and header makes the error very explicit for clients and helps building very accurate user experiences and/or efficient API integrations. </p>
+<h1 id="building-a-rate-limiter">Building a rate limiter</h1>
+<p>Now that we have discussed some of the theoretic fundamentals of rate limiting, we can finally get our hands dirty with some code. In this hands-on section of the article we'll see how to build a rate limiter, test it and finally use it in a sample API project.</p>
+<h2 id="our-requirements">Our requirements</h2>
+<p>First and foremost, let's define some requirement for our rate limiter:</p>
+<ul>
+<li>It should be used on an API to keep control of incoming requests. As such, it will be a server-side component/library;</li>
+<li>It should limit requests based on the IP of the caller;</li>
+<li>It should allow up to 5 requests per minute from the same IP address;</li>
+<li>Our limits should be respected regardless of how the rate limiter is hosted. In other words, our checks should be accurate even if our service is hosted on multiple service replicas at the same time;</li>
+<li>In case of rate limiter internal errors, it will be up to the overarching API to decide whether to allow or throttle the request.</li>
+<li>If a request is allowed, it should return to the users the remaining request budget. If a request is throttled, it should suggest when to retry the next request.</li>
+</ul>
+<h2 id="our-tech-stack">Our tech stack</h2>
+<p>The fact that our rate limiter has to be distributed gives us already an important implementation constraint: in order for our requests checks to be accurate, the state of the rate limiter must be remote. Moreover, as we do not have strict service quota checks to respect, it might be sensible to start with a simple implementation.</p>
+<p>In its first iteration our rate limiter will be an implementation of the <em>Fixed window</em> algorithm and we'll leverage <a href="https://redis.io/">Redis</a> for our remote state management.</p>
+<h3 id="remote-state-management">Remote state management</h3>
+<p>Redis is a in-memory data store, designed for low latency and bundled with a bunch of neat features that we can really leverage to keep our implementation simple and powerful at the same time.</p>
+<p>Thanks to its basic features, and the more advanced <code>WATCH</code> and <code>MULTI</code> commands, Redis is a very nice fit for a simple solution yet resilient to concurrency issues.</p>
+<h3 id="why-rust">Why Rust</h3>
+<p>For this experiment I decided to use Rust. </p>
+<p>As I said in the first part of this post, picking a language that has a first-class support for concurrency is half of the job when building a rate limiter. Whilst this is very true for Rust, I can't say it was the real driver for my decision in this case: we'll solve most of the concurrency challenges with the help of Redis commands.</p>
+<p>I decided to go with Rust here mostly for my personal interest: I wanted to get a bit more familiar with the language as well as ecosystem and the tooling. I wanted to test my productivity with something which was outside the comfort zone provided by my current company code bases and internal libraries (Yes, <a href="https://www.youtube.com/watch?v=1nKC505_uTU">we write a lot of Rust in TrueLayer</a>).</p>
+<h3 id="github-repository">Github repository</h3>
+<p>All code snippets below are taken from my public <a href="https://github.com/dili91/rate-limiting">rate-limiting</a> project on Github - Feel free to contribute and/or giving it a ⭐️ if you like.</p>
+<h2 id="implementation-details">Implementation details</h2>
+<p>Let's start by defining the basic <strike>interface</strike> trait of our rate limiter component.</p>
+<h3 id="our-main-trait">Our main trait</h3>
+<p>Simply put, our rate limiter component should accept a request and return whether that can be executed or not. </p>
+<p>This is how we can model our basic functionality:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub trait </span><span>RateLimiter {
+</span><span>    </span><span style="color:#65737e;">/// Method that checks whether a request is allowed or should
+</span><span>    </span><span style="color:#65737e;">/// be throttled instead.
+</span><span>    </span><span style="color:#65737e;">/// Returns an error if unable to check, usually due to
+</span><span>    </span><span style="color:#65737e;">/// issues connecting to the underlying Redis instance.
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">check_request</span><span>(
+</span><span>        &amp;</span><span style="color:#bf616a;">self</span><span>,
+</span><span>        </span><span style="color:#bf616a;">request_identifier</span><span>: RequestIdentifier,
+</span><span>    ) -&gt; Result&lt;RateLimiterResponse, RateLimiterError&gt;;
+</span><span>}
+</span></code></pre>
+<p>One of the strengths of Rust is its type system. Rust <strong>does not have exceptions</strong> and thanks to the <a href="https://doc.rust-lang.org/std/result/">Result</a> 
+type we can really design an expressive interface for our rate limiter component.</p>
+<p>Our <code>check_request</code> function will accept an enum <code>RequestIdentifier</code> which can model either an IP address (with the help of the standard <a href="https://doc.rust-lang.org/std/net/enum.IpAddr.html">IpAddr</a> type) or a custom request identifier, made of a key value pair.</p>
+<p>When I originally wrote the code, I wanted to give some more flexibility to our rate limiter going beyond the sole IP address use case, but in the context of this article, we can completely ignore the <code>Custom</code> variant. </p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// Enum that represents the possible input types for our rate limiter
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(Clone)]
+</span><span style="color:#b48ead;">pub enum </span><span>RequestIdentifier {
+</span><span>    </span><span style="color:#65737e;">/// An Ip address. Used when we want to rate limit requests based on
+</span><span>    </span><span style="color:#65737e;">/// the Ip address from which the request was fired
+</span><span>    Ip(IpAddr),
+</span><span>    </span><span style="color:#65737e;">/// A custom identifier in a string format. Used when we want to rate
+</span><span>    </span><span style="color:#65737e;">/// limit based on custom criteria, like a client identifier.
+</span><span>    Custom { key: String, value: String },
+</span><span>}
+</span></code></pre>
+<p>The same <code>check_request</code> method will return either a <code>RateLimiterResponse</code> enumeration to model proper rate limiter responses or a <code>RateLimiterError</code> enumeration in case of internal errors while computing our limits checks. </p>
+<p>Each variant included in the <code>RateLimiterResponse</code> enum will have their own, specific fields.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub enum </span><span>RateLimiterResponse {
+</span><span>    </span><span style="color:#65737e;">/// variant for requests that are allowed
+</span><span>    RequestAllowed(RequestAllowed),
+</span><span>    </span><span style="color:#65737e;">/// variant for requests that are throttled
+</span><span>    RequestThrottled(RequestThrottled),
+</span><span>}
+</span></code></pre>
+<p>In case of a successful request check, we want our users to know how many requests they can fire after the one just happened. We're conveying this information with the help of a <code>remaining_request_counter</code> field on our <code>RequestAllowed</code> variant.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// Struct for requests that are allowed by the rate limiter
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(Debug)]
+</span><span style="color:#b48ead;">pub struct </span><span>RequestAllowed {
+</span><span>    </span><span style="color:#65737e;">/// the updated counter of available requests for the given ip/custom
+</span><span>    </span><span style="color:#65737e;">/// request id
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">remaining_request_counter</span><span>: </span><span style="color:#b48ead;">u64</span><span>,
+</span><span>}
+</span></code></pre>
+<p>Alternatively, if a request cannot go through because our users have already reached the maximum number of requests in the current window, we want to suggest them when
+to expect the next request to succeed again with a <code>retry_in</code> field of type <a href="https://doc.rust-lang.org/stable/std/time/struct.Duration.html">Duration</a>, which can then
+be converted to the desired time unit (usually seconds). </p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// Struct for requests that are throttled by the rate limiter
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(Debug)]
+</span><span style="color:#b48ead;">pub struct </span><span>RequestThrottled {
+</span><span>    </span><span style="color:#65737e;">/// a duration representing when the user should retry the request
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">retry_in</span><span>: Duration,
+</span><span>}
+</span></code></pre>
+<p>Finally, if we're unable to check the request limits due to an internal error, we'll let our users know with a <code>RateLimiterError</code> type, which can surface 
+a few different internal errors.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#65737e;">/// Enum that represent the error potentially returned by the rate
+</span><span style="color:#65737e;">/// limiter component
+</span><span>#[</span><span style="color:#bf616a;">derive</span><span>(thiserror::Error, Debug)]
+</span><span style="color:#b48ead;">pub enum </span><span>RateLimiterError {
+</span><span>    #[</span><span style="color:#bf616a;">error</span><span>(&quot;</span><span style="color:#a3be8c;">Init error</span><span>&quot;)]
+</span><span>    InitError(#[</span><span style="color:#bf616a;">source</span><span>] RedisError),
+</span><span>    #[</span><span style="color:#bf616a;">error</span><span>(&quot;</span><span style="color:#a3be8c;">Compute error</span><span>&quot;)]
+</span><span>    ComputeError,
+</span><span>    #[</span><span style="color:#bf616a;">error</span><span>(&quot;</span><span style="color:#a3be8c;">Connect error: {0}</span><span>&quot;)]
+</span><span>    IoError(#[</span><span style="color:#bf616a;">source</span><span>] RedisError),
+</span><span>}
+</span></code></pre>
+<p>Whilst this list is only partial, it's probably more than enough for our first iteration of the rate limiter. Note how this struct is decorated with 
+shorthands included in the <a href="https://docs.rs/thiserror/latest/thiserror/">thiserror</a> crate to improve the readability of inner errors.</p>
+<p>Last but not least, note how the above type and function declarations are kept very generic: we don't want to pollute our contracts with any implementation details.</p>
+<h3 id="our-rate-limiter-instance">Our rate limiter instance</h3>
+<p>So far we spoke about our contracts but we haven't touched on our concrete type yet. As our rate limiter will implement the <em>Fixed window</em> algorithm, 
+we should expect two attributes on our main struct: our window should have a <strong>size</strong> and <strong>duration</strong>.</p>
+<p>Lastly, as our component will use Redis under the hood, we should probably as well expect a <strong>client</strong> to be included in the same rate limiter concrete type. We'll use this <a href="https://docs.rs/redis/latest/redis/">redis crate</a> to interact with our instance.</p>
+<p>With all this requirement in mind we can finally define our concrete <code>FixedWindowRateLimiter</code> struct:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">derive</span><span>(Clone)]
+</span><span style="color:#b48ead;">pub struct </span><span>FixedWindowRateLimiter {
+</span><span>    </span><span style="color:#65737e;">/// The size of the window, that is the maximum number
+</span><span>    </span><span style="color:#65737e;">/// of requests that the rate limiter will allow for a time equal
+</span><span>    </span><span style="color:#65737e;">/// to the _window_duration_
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">window_size</span><span>: </span><span style="color:#b48ead;">u64</span><span>,
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// Represents how long the window should be considered valid.
+</span><span>    </span><span style="color:#65737e;">/// This can be considered as the equivalent of the refill rate
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">window_validity</span><span>: Duration,
+</span><span>
+</span><span>    </span><span style="color:#65737e;">/// The internal client that will be used to fire requests
+</span><span>    </span><span style="color:#65737e;">/// against Redis
+</span><span>    </span><span style="color:#b48ead;">pub </span><span style="color:#bf616a;">redis_client</span><span>: redis::Client,
+</span><span>}
+</span></code></pre>
+<p>To initiate our rate limiter instance we can simply go ahead with the classic struct initialization syntax in Rust, or doing something 
+fancier with the help of a <a href="https://github.com/dili91/rate-limiting/blob/main/rate-limiter-rs/src/builders/fixed_window.rs">builder pattern</a>. We're gonna skip these bits here, as not really relevant for what we want to build.</p>
+<p>Instead, we can now move to the juicy details of our specific rate limiter implementation.</p>
+<h3 id="our-algorithm">Our algorithm</h3>
+<p>As mentioned, we'll leverage Redis native commands to implement our checks. Let's now try to design our algorithm, conscious 
+of the <a href="https://redis.io/commands/">Redis offering</a>.</p>
+<p>We can use a Redis key as counter for our requests: its <strong>name</strong> will be made of the IP address of the request, and its <strong>value</strong> will keep
+the updated counter of requests received from the same IP address in the current window.</p>
+<p>When a request comes in we have to: </p>
+<ol>
+<li>Increment our key by 1. if not existing, create a key with an initial value of 0;</li>
+<li>Get the updated counter and
+<ol>
+<li>Block the request if the counter is above our window <strong>size</strong>, and suggest when to retry;</li>
+<li>Otherwise, let the request execute and return the updated request budget.</li>
+</ol>
+</li>
+</ol>
+<p>To save some memory we'll also associate an expiration to our key, equals to the window <strong>duration</strong>, so that we can eventually clean up our state, even if no request are coming after the first one. We can place this step soon after the first instruction above.</p>
+<p>Notice how our implementation slightly diverges from the definition in the <a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#fixed-window">first part of this article</a>:
+the start of our window won't be bound to the beginning of a minute, but it will be equal to the timestamp of the first request received from an IP address. We're doing this mostly because we're leveraging Redis keys expirations. Only accidentally, such choice will also mitigate a bit more - not solve! - the limits overflow problem described in the <em>Fixed window</em> algorithm section.</p>
+<h4 id="on-the-shoulder-of-redis">On the shoulder of Redis</h4>
+<p>Translated into Redis instructions, the above steps will look like this: </p>
+<ol>
+<li><code>INCR $key_name</code>: Increment <code>$key_name</code> by 1. If not existing, create a <code>$key_name</code> and set it to 0</li>
+<li><code>EXPIRE $key_name $window_duration_seconds NX</code>: associate an expiry of <code>$window_duration_seconds</code> to the key, if not existing</li>
+<li><code>TTL $key_name</code>: get the updated expiry of the key</li>
+</ol>
+<p>Finally, as mentioned already, one of the reasons why I picked Redis was its support for locking, to help us dealing with concurrent updates. 
+To make the above sequence resilient to race conditions, we have to basically treat that as an atomic command, and make sure we prevent concurrent modifications
+to the same key.</p>
+<p>We can do that with the help of <a href="https://redis.io/docs/manual/transactions/#:~:text=Redis%20Transactions%20allow%20the%20execution,are%20serialized%20and%20executed%20sequentially.">transactions</a>! </p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>WATCH $key_name
+</span><span>MULTI
+</span><span>... our commands ...
+</span><span>EXEC
+</span><span>UNWATCH
+</span></code></pre>
+<p>We can surround our 4 statements with a <code>MULTI</code> / <code>EXEC</code> block to implement atomicity, and with a <code>WATCH</code> / <code>UNWATCH</code> guard on our key we can stop any potential concurrent modification from happen: if our key is modified after the <code>WATCH</code> instruction above by another process before being <code>UNWATCH</code>ed, the whole transaction aborts.</p>
+<p>Therefore, our sequence of commands will eventually look like this:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>WATCH rl:ip_192.168.224.6
+</span><span>MULTI
+</span><span>INCR rl:ip_192.168.224.6
+</span><span>EXPIRE rl:ip_192.168.224.6 60 NX
+</span><span>TTL rl:ip_192.168.224.6
+</span><span>EXEC
+</span><span>UNWATCH
+</span></code></pre>
+<p>Note how <code>rl:ip_192.168.224.6</code> is our key name here: the prefix says that key refers to rate limiting(we might use Redis for other things as well!) and that <code>ip</code> word tell us a bit more on how we have identified the request.</p>
+<h4 id="our-trait-implemented">Our trait implemented</h4>
+<p>Now we just have to reproduce the same exact sequence of instruction from our trait implementation for the <code>FixedWindowRateLimiter</code> struct:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl </span><span>RateLimiter </span><span style="color:#b48ead;">for </span><span>FixedWindowRateLimiter {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">check_request</span><span>(
+</span><span>        &amp;</span><span style="color:#bf616a;">self</span><span>,
+</span><span>        </span><span style="color:#bf616a;">request_identifier</span><span>: RequestIdentifier,
+</span><span>    ) -&gt; Result&lt;RateLimiterResponse, RateLimiterError&gt; {
+</span><span>        </span><span style="color:#b48ead;">let</span><span> key = &amp;</span><span style="color:#bf616a;">self</span><span>.</span><span style="color:#96b5b4;">build_request_key</span><span>(request_identifier);
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">let mut</span><span> con = </span><span style="color:#bf616a;">self</span><span>.redis_client.</span><span style="color:#96b5b4;">get_connection</span><span>()?;
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">let </span><span>(executed_request_counter, expire_in_seconds): (</span><span style="color:#b48ead;">u64</span><span>, </span><span style="color:#b48ead;">u64</span><span>) =
+</span><span>            redis::transaction(&amp;</span><span style="color:#b48ead;">mut</span><span> con, &amp;[key], |</span><span style="color:#bf616a;">con</span><span>, </span><span style="color:#bf616a;">pipe</span><span>| {
+</span><span>                pipe.</span><span style="color:#96b5b4;">cmd</span><span>(&quot;</span><span style="color:#a3be8c;">INCR</span><span>&quot;)
+</span><span>                    .</span><span style="color:#96b5b4;">arg</span><span>(key)
+</span><span>                    .</span><span style="color:#96b5b4;">cmd</span><span>(&quot;</span><span style="color:#a3be8c;">EXPIRE</span><span>&quot;)
+</span><span>                    .</span><span style="color:#96b5b4;">arg</span><span>(key)
+</span><span>                    .</span><span style="color:#96b5b4;">arg</span><span>(</span><span style="color:#bf616a;">self</span><span>.window_validity.</span><span style="color:#96b5b4;">as_secs</span><span>())
+</span><span>                    .</span><span style="color:#96b5b4;">arg</span><span>(&quot;</span><span style="color:#a3be8c;">NX</span><span>&quot;)
+</span><span>                    .</span><span style="color:#96b5b4;">ignore</span><span>()
+</span><span>                    .</span><span style="color:#96b5b4;">cmd</span><span>(&quot;</span><span style="color:#a3be8c;">TTL</span><span>&quot;)
+</span><span>                    .</span><span style="color:#96b5b4;">arg</span><span>(key)
+</span><span>                    .</span><span style="color:#96b5b4;">query</span><span>(con)
+</span><span>            })?;
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">let</span><span> response = </span><span style="color:#b48ead;">if</span><span> executed_request_counter &lt;= </span><span style="color:#bf616a;">self</span><span>.window_size {
+</span><span>            RateLimiterResponse::RequestAllowed(RequestAllowed {
+</span><span>                remaining_request_counter: </span><span style="color:#bf616a;">self</span><span>.window_size - executed_request_counter as </span><span style="color:#b48ead;">u64</span><span>,
+</span><span>            })
+</span><span>        } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>            RateLimiterResponse::RequestThrottled(RequestThrottled {
+</span><span>                retry_in: Duration::from_secs(expire_in_seconds),
+</span><span>            })
+</span><span>        };
+</span><span>
+</span><span>        Ok(response)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Our redis crate syntax is actually self explanatory: </p>
+<ol>
+<li>First of all we get a connection to our Redis instance;</li>
+<li>We create a transaction using the acquired connection and key;</li>
+<li>We define and execute our sequence of commands with the help of the <code>query</code> utility;</li>
+<li>We finally return the rate limiter response object to the caller, including the details which will help us satisfying our initial <a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#our-requirements">requirements</a>.</li>
+</ol>
+<p>I did not talk much about the <code>build_request_key</code> function, but its responsibility should be clear 😃. The interested reader can find its <a href="https://github.com/dili91/rate-limiting/blob/main/rate-limiter-rs/src/lib.rs#L19">default implementation</a> on the <code>RateLimiter</code> trait.</p>
+<h4 id="the-beauty-of-error-handling-in-rust">The beauty of error handling in Rust</h4>
+<p>The bit I'd highlight here instead is the use of the magic <code>?</code> operator, as it's a chance to see how error handling is yet another strength of Rust. </p>
+<p>Without being verbose at all in this method, we're basically asking the compiler to propagate upstream any <code>RedisError</code> returned by the <a href="https://docs.rs/redis/latest/redis/struct.RedisError.html">crate we depend upon</a>. But it's not just that! Our method signature states that it will return a <code>RateLimiterError</code> type (described above) in case of any error. </p>
+<p>So... What kind of magic is happening here ?</p>
+<p>In order for our code to compile, the compiler has to know how to map a <code>RedisError</code> into a <code>RateLimiterError</code>. Without any information about this conversion, the compiler will reject building: </p>
+<pre data-lang="sh" style="background-color:#2b303b;color:#c0c5ce;" class="language-sh "><code class="language-sh" data-lang="sh"><span style="color:#bf616a;">$</span><span> cargo build
+</span><span style="color:#bf616a;">~</span><span>&gt;
+</span><span>   </span><span style="color:#bf616a;">...
+</span><span>   </span><span style="color:#bf616a;">Compiling</span><span> rate-limiter-rs v0.1.0 (/Users/andrea.dilisio/Documents/Personal/Projects/rate-limiting/rate-limiter-rs)
+</span><span style="color:#bf616a;">error[E0277]: </span><span>`</span><span style="color:#bf616a;">?</span><span>` couldn&#39;</span><span style="color:#a3be8c;">t convert the error to `RateLimiterError`
+</span><span style="color:#a3be8c;">  --&gt; src/builders/fixed_window.rs:60:15
+</span><span style="color:#a3be8c;">   |
+</span><span style="color:#a3be8c;">60 |             })?;
+</span><span style="color:#a3be8c;">   |               ^ the trait `From&lt;RedisError&gt;` is not implemented for `RateLimiterError`
+</span><span style="color:#a3be8c;">   |
+</span><span style="color:#a3be8c;">   = note: the question mark operation (`?`) implicitly performs a conversion on the error value using the `From` trait
+</span><span style="color:#a3be8c;">
+</span></code></pre>
+<p>So, as suggested by the compiler itself 😲, we have to implement the <code>From&lt;RedisError&gt;</code> trait for our <code>RateLimiter</code> error:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl </span><span>From&lt;RedisError&gt; </span><span style="color:#b48ead;">for </span><span>RateLimiterError {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">from</span><span>(</span><span style="color:#bf616a;">redis_error</span><span>: RedisError) -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">match</span><span> redis_error.</span><span style="color:#96b5b4;">kind</span><span>() {
+</span><span>            redis::ErrorKind::InvalidClientConfig =&gt;
+</span><span>              RateLimiterError::InitError(redis_error),
+</span><span>            _ =&gt; RateLimiterError::IoError(redis_error),
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>With the above hint the compiler knows how to finally map a <code>RedisError</code> into one of our custom error variants. We could be way more accurate in discriminating <code>RedisError</code>s in the <code>from</code> function, but we're happy with the <code>_</code> catch-all in this first version of our library.</p>
+<p>Notice the verbosity the compiler in this case. At first you might get bored of the compiler due to its pedantry, but its output is actually one of the most powerful way of learning and getting familiar with Rust 😀. And <code>cargo</code> is surely one of the most accurate and complete build tool / package manager I've ever worked with.</p>
+<h2 id="testing-our-library">Testing our library</h2>
+<p>Now that we went through the main implementation details of our library, we can approach some tests. I've skipped some information about how we could structure the project but the interested can jump on the <a href="https://github.com/dili91/rate-limiting/tree/main/rate-limiter-rs">source code</a> available of my Github to clear any open point.</p>
+<p>To be comfortable using our library, let's define a few tests to: </p>
+<ul>
+<li>make sure that the rate limiting algorithm actually works 😅</li>
+<li>verify that error scenarios are handled properly</li>
+</ul>
+<p>Let's start by checking that in case of connection errors to a Redis instance, our <code>check_request</code> function returns a proper <code>RateLimiterError</code>. I think it's easier to start with, as we're testing an interim step in our algorithm. Moreover it comes handy, as we did not talk yet about how booting a Redis instance locally. We'll touch that later.</p>
+<p>One of the features of testing in Rust is that you can include your test functions on the same file where the productive code is defined. Moreover, with the help of a special <code>#[cfg(test)]</code> directive we can make sure our tests won't be compiled into our library when released.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">cfg</span><span>(test)]
+</span><span style="color:#b48ead;">mod </span><span>test {
+</span><span>  #[</span><span style="color:#bf616a;">test</span><span>]
+</span><span>  </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">should_yield_a_connection_error</span><span>() {
+</span><span>        </span><span style="color:#65737e;">//arrange
+</span><span>        </span><span style="color:#b48ead;">let</span><span> rate_limiter = RateLimiterFactory::fixed_window()
+</span><span>            .</span><span style="color:#96b5b4;">with_redis_settings</span><span>(RedisSettings {
+</span><span>                host: &quot;</span><span style="color:#a3be8c;">redis</span><span>&quot;.</span><span style="color:#96b5b4;">to_string</span><span>(),
+</span><span>                port: </span><span style="color:#d08770;">6379</span><span>,
+</span><span>            })
+</span><span>            .</span><span style="color:#96b5b4;">build</span><span>()
+</span><span>            .</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>        </span><span style="color:#b48ead;">let</span><span> ip = </span><span style="color:#96b5b4;">generate_random_ip</span><span>();
+</span><span>        </span><span style="color:#b48ead;">let</span><span> request_identifier = RequestIdentifier::Ip(ip);
+</span><span>
+</span><span>        </span><span style="color:#65737e;">//act
+</span><span>        </span><span style="color:#b48ead;">let</span><span> res = rate_limiter.</span><span style="color:#96b5b4;">check_request</span><span>(request_identifier);
+</span><span>
+</span><span>        </span><span style="color:#65737e;">//assert
+</span><span>        assert!(res.</span><span style="color:#96b5b4;">is_err</span><span>());
+</span><span>        assert!(matches!(
+</span><span>            res.</span><span style="color:#96b5b4;">unwrap_err</span><span>(),
+</span><span>            RateLimiterError::IoError(redis::RedisError { .. })
+</span><span>        ))
+</span><span>  }
+</span><span>
+</span><span>  </span><span style="color:#65737e;">// utility test method to generate random IP addresses
+</span><span>  </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">generate_random_ip</span><span>() -&gt; IpAddr {
+</span><span>        </span><span style="color:#b48ead;">let mut</span><span> rng = rand::thread_rng();
+</span><span>        IpAddr::</span><span style="color:#d08770;">V4</span><span>(Ipv4Addr::new(
+</span><span>            rng.</span><span style="color:#96b5b4;">gen</span><span>(), rng.</span><span style="color:#96b5b4;">gen</span><span>(), rng.</span><span style="color:#96b5b4;">gen</span><span>(), rng.</span><span style="color:#96b5b4;">gen</span><span>()))
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p>Let's test our assertion again <code>cargo test</code> and verify that our test passes. </p>
+<p>Let's now test our <code>check_request</code> behavior with a Redis instance available. We can use the basic, official Docker image for this purpose: </p>
+<pre data-lang="sh" style="background-color:#2b303b;color:#c0c5ce;" class="language-sh "><code class="language-sh" data-lang="sh"><span style="color:#bf616a;">docker</span><span> run</span><span style="color:#bf616a;"> -p</span><span> 6379:6379</span><span style="color:#bf616a;"> --name</span><span> redis</span><span style="color:#bf616a;"> -d</span><span> redis
+</span></code></pre>
+<p>Then, on the same <code>.rs</code> file as before, let's include a new test for the main algorithm behavior:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#bf616a;">test</span><span>]
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">should_check_request_eligibility</span><span>() {
+</span><span>    </span><span style="color:#65737e;">//arrange
+</span><span>    </span><span style="color:#b48ead;">let</span><span> window_size = </span><span style="color:#d08770;">5</span><span>;
+</span><span>    </span><span style="color:#b48ead;">let</span><span> window_duration = Duration::from_secs(</span><span style="color:#d08770;">60</span><span>);
+</span><span>    </span><span style="color:#b48ead;">let</span><span> rate_limiter = RateLimiterFactory::fixed_window()
+</span><span>        .</span><span style="color:#96b5b4;">with_window_size</span><span>(window_size)
+</span><span>        .</span><span style="color:#96b5b4;">with_window_duration</span><span>(window_duration)
+</span><span>        .</span><span style="color:#96b5b4;">build</span><span>()
+</span><span>        .</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> request_identifier = 
+</span><span>        RequestIdentifier::Ip(</span><span style="color:#96b5b4;">generate_random_ip</span><span>());
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for</span><span> n in </span><span style="color:#d08770;">1</span><span>..=</span><span style="color:#d08770;">2 </span><span>* window_size {
+</span><span>        </span><span style="color:#65737e;">//act
+</span><span>        </span><span style="color:#b48ead;">let</span><span> res = rate_limiter
+</span><span>            .</span><span style="color:#96b5b4;">check_request</span><span>(request_identifier.</span><span style="color:#96b5b4;">clone</span><span>())
+</span><span>            .</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if</span><span> n &lt;= window_size {
+</span><span>            </span><span style="color:#b48ead;">let</span><span> allowed_res = res.</span><span style="color:#96b5b4;">as_allowed</span><span>();
+</span><span>            assert_eq!(
+</span><span>                allowed_res.remaining_request_counter,
+</span><span>                cmp::max(</span><span style="color:#d08770;">0</span><span>, window_size as </span><span style="color:#b48ead;">i64 </span><span>- n as </span><span style="color:#b48ead;">i64</span><span>) as </span><span style="color:#b48ead;">u64
+</span><span>            )
+</span><span>        } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>            </span><span style="color:#b48ead;">let</span><span> tolerance_secs = window_duration.</span><span style="color:#96b5b4;">as_secs</span><span>() * </span><span style="color:#d08770;">5 </span><span>/ </span><span style="color:#d08770;">100</span><span>;
+</span><span>            </span><span style="color:#b48ead;">let</span><span> throttled_res = res.</span><span style="color:#96b5b4;">as_throttled</span><span>();
+</span><span>            </span><span style="color:#b48ead;">let</span><span> retry_in_secs = throttled_res.retry_in.</span><span style="color:#96b5b4;">as_secs</span><span>();
+</span><span>            assert!(
+</span><span>                retry_in_secs &gt; </span><span style="color:#d08770;">0 </span><span>&amp;&amp; retry_in_secs 
+</span><span>                    &lt;= window_duration.</span><span style="color:#96b5b4;">as_secs</span><span>(),
+</span><span>                &quot;</span><span style="color:#a3be8c;">retry in is not in valid range</span><span>&quot;
+</span><span>            );
+</span><span>            assert!(
+</span><span>                window_duration.</span><span style="color:#96b5b4;">as_secs</span><span>() 
+</span><span>                    - throttled_res.retry_in.</span><span style="color:#96b5b4;">as_secs</span><span>() 
+</span><span>                    &lt;= tolerance_secs,
+</span><span>                &quot;</span><span style="color:#a3be8c;">retry_in suggestion is greater than tolerance of {0}s</span><span>&quot;,
+</span><span>                tolerance_secs
+</span><span>            )
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>Let's review the contents on the above test: </p>
+<ul>
+<li>in the <code>//arrange</code> section we create an instance of a rate limiter 
+allowing a maximum of 5 requests from the same IP address during a 1 minute time window;</li>
+<li>we then have a loop of 10 iterations (quite arbitrary number, twice as <code>window_size</code>) where 
+<ul>
+<li>we call our main <code>check_request</code> always with the same <code>request_identifier</code>;</li>
+<li>we assert on the returned <code>RateLimiterResponse</code> object;</li>
+</ul>
+</li>
+<li>in the first five iterations we call an internal <code>as_allowed()</code> utility (available during tests only!)
+which verifies (panic otherwise) that the returned variant is of type <code>RequestAllowed</code>. Moreover we assert
+on the outstanding request budget; </li>
+<li>Similarly, in the last five iterations we verify that the returned variant is of type <code>RequestThrottled</code> and that the <code>retry_in</code> field 
+matches our expectations.</li>
+</ul>
+<p>By running this test and verifying that all our tests pass, we can be pretty comfortable with our first rate limiter implementation and we can 
+think of finally using it on one of our existing projects. </p>
+<p>The interested reader can spy on a few other test improvements which I included in the original source code: </p>
+<ul>
+<li>parametrized tests with the help of the <a href="https://github.com/la10736/rstest">rstest</a> framework; </li>
+<li>few other tests on <a href="https://github.com/dili91/rate-limiting/blob/main/rate-limiter-rs/src/builders/fixed_window.rs#L71">builders</a> and other internal methods used by the library;</li>
+<li>cargo <a href="https://nexte.st/">nextest</a> extension for an improved test performances and readability, both locally and at CI time.</li>
+</ul>
+<h1 id="using-it">Using it</h1>
+<p>We can finally approach the last part of this blog post, where we'll see our rate limiter in action.</p>
+<h2 id="our-pilot-project">Our pilot project</h2>
+<p>For this demo I'll use a very basic API project built on the <a href="https://actix.rs/">Actix</a> web framework. 
+Our pilot project, namely <a href="https://github.com/dili91/rate-limiting/tree/main/carbon-intensity-api">carbon-intensity-api</a>, has just a couple of endpoints:</p>
+<ul>
+<li>a <code>GET /health_check</code> endpoint, that returns <code>200</code> whenever the API is up and running;</li>
+<li>a <code>GET /carbon/intensity</code> endpoint, returning an indication (currently fake) of the <a href="https://www.nationalgrideso.com/future-energy/net-zero-explained/what-carbon-intensity">carbon intensity</a> at the time the request was fired.</li>
+</ul>
+<h3 id="building-blocks">Building blocks</h3>
+<p>Our project structures is simple as this: </p>
+<ul>
+<li>an <a href="https://github.com/dili91/rate-limiting/blob/main/carbon-intensity-api/src/application.rs">application</a> unit, that models the API instance;</li>
+<li>the usual library and binary files, very common in Rust projects;</li>
+<li>a <a href="https://github.com/dili91/rate-limiting/blob/main/carbon-intensity-api/src/settings.rs">settings</a> class, to give our API some degrees of configurability;</li>
+<li>a <a href="https://github.com/dili91/rate-limiting/tree/main/carbon-intensity-api/src/routes">routes</a> directory, including our two above mentioned endpoint definitions.</li>
+</ul>
+<p>It would be pointless and counterproductive 😅 to rate limit the <em>health_check</em> endpoint. Let's see how we can easily narrow our focus on the carbon intensity endpoint only.</p>
+<h2 id="actix-middlewares-a-tldr"><em>Actix</em> middlewares, a <code>TLDR;</code></h2>
+<p>To add rate limiting to our API we'll introduce a <a href="https://actix.rs/docs/middleware">middleware</a>. Conceptually, a middleware is a component which helps us adding some extra behavior to an existing endpoint, without modifying the endpoint code per se. To quote Actix docs: </p>
+<blockquote>
+<p>Typically, middleware is involved in the following actions:</p>
+<ul>
+<li>Pre-process the Request</li>
+<li>Post-process a Response</li>
+<li>Modify application state</li>
+<li>Access external services (redis, logging, sessions)</li>
+</ul>
+</blockquote>
+<p>Hence, a perfect fit for our rate limiter checks. </p>
+<p>Creating and registering a custom middleware in <em>Actix</em> is probably not the best nor the simplest piece of code you'll write, but it's probably the safest option to choose, as it's a way to plug extra behavior to your project without changing its code too much nor polluting the business logic with undesired technical, framework related complexity. </p>
+<p>I'm not going to discuss the details of how you could write a middleware: for the purpose of this post it's enough to know that the rate limiter library that we've built above will be invoked in the context of a <code>call</code> function with the below signature</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">call</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">req</span><span>: ServiceRequest) -&gt; </span><span style="color:#b48ead;">Self::</span><span>Future {
+</span><span>    ... custom logic...
+</span><span>}
+</span></code></pre>
+<p>And that our rate limiter instance will be an attribute of the same middleware object.</p>
+<p>If you're curious about the Nitty Gritty details of an Actix middleware codebase, <a href="https://imfeld.dev/writing/actix-web-middleware">this article</a> will surely help you out.</p>
+<h2 id="injecting-our-rate-limiter">Injecting our rate limiter</h2>
+<p>So, let's see our invocation now: </p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">call</span><span>(&amp;</span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">req</span><span>: ServiceRequest) -&gt; </span><span style="color:#b48ead;">Self::</span><span>Future {
+</span><span style="color:#b48ead;">let</span><span> service = </span><span style="color:#bf616a;">self</span><span>.service.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span style="color:#b48ead;">let</span><span> rate_limiter = </span><span style="color:#bf616a;">self</span><span>.rate_limiter.</span><span style="color:#96b5b4;">clone</span><span>();
+</span><span>  async </span><span style="color:#b48ead;">move </span><span>{
+</span><span>    </span><span style="color:#b48ead;">let</span><span> ip_address = req
+</span><span>        .</span><span style="color:#96b5b4;">connection_info</span><span>()
+</span><span>        .</span><span style="color:#96b5b4;">realip_remote_addr</span><span>()
+</span><span>        .</span><span style="color:#96b5b4;">ok_or_else</span><span>(||
+</span><span>            ApiError::InvalidRequest(
+</span><span>                &quot;</span><span style="color:#a3be8c;">Missing IP address!</span><span>&quot;.</span><span style="color:#96b5b4;">to_string</span><span>()))?
+</span><span>        .</span><span style="color:#96b5b4;">parse</span><span>()
+</span><span>        .</span><span style="color:#96b5b4;">map_err</span><span>(|</span><span style="color:#bf616a;">e</span><span>: AddrParseError|
+</span><span>            ApiError::Internal(e.</span><span style="color:#96b5b4;">to_string</span><span>()))?;
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> request_identifier = RequestIdentifier::Ip(ip_address);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> rate_limiter_response = rate_limiter
+</span><span>        .</span><span style="color:#96b5b4;">check_request</span><span>(request_identifier);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">return match</span><span> rate_limiter_response {
+</span><span>      Ok(response) =&gt; {
+</span><span>        </span><span style="color:#b48ead;">return match</span><span> response {
+</span><span>            RateLimiterResponse::
+</span><span>              RequestAllowed(RequestAllowed {
+</span><span>                  remaining_request_counter,
+</span><span>            }) =&gt; {
+</span><span>              </span><span style="color:#b48ead;">let mut</span><span> inner_service_response =
+</span><span>                  service.</span><span style="color:#96b5b4;">call</span><span>(req).await?;
+</span><span>  
+</span><span>              inner_service_response.</span><span style="color:#96b5b4;">headers_mut</span><span>().</span><span style="color:#96b5b4;">insert</span><span>(
+</span><span>                  HeaderName::from_str(
+</span><span>                      </span><span style="color:#d08770;">RATE_LIMITER_REMAINING_REQUEST_HTTP_HEADER_NAME</span><span>,
+</span><span>                  )
+</span><span>                  .</span><span style="color:#96b5b4;">map_err</span><span>(
+</span><span>                      |</span><span style="color:#bf616a;">e</span><span>: InvalidHeaderName| 
+</span><span>                        ApiError::Internal(e.</span><span style="color:#96b5b4;">to_string</span><span>()),
+</span><span>                  )?,
+</span><span>                  HeaderValue::from_str(
+</span><span>                      remaining_request_counter.</span><span style="color:#96b5b4;">to_string</span><span>().</span><span style="color:#96b5b4;">as_str</span><span>(),
+</span><span>                  )
+</span><span>                  .</span><span style="color:#96b5b4;">map_err</span><span>(
+</span><span>                      |</span><span style="color:#bf616a;">e</span><span>: InvalidHeaderValue|
+</span><span>                        ApiError::Internal(e.</span><span style="color:#96b5b4;">to_string</span><span>()),
+</span><span>                  )?,
+</span><span>              );
+</span><span>  
+</span><span>              Ok(inner_service_response)
+</span><span>            }
+</span><span>            RateLimiterResponse::RequestThrottled(
+</span><span>                RequestThrottled { retry_in }) =&gt; {
+</span><span>                    log::warn!(&quot;</span><span style="color:#a3be8c;">request throttled
+</span><span style="color:#a3be8c;">                        for ip={}</span><span>&quot;, ip_address);
+</span><span>        
+</span><span>                    </span><span style="color:#b48ead;">return </span><span>Err(ApiError::RequestThrottled {
+</span><span>                        retry_after_seconds: retry_in.</span><span style="color:#96b5b4;">as_secs</span><span>(),
+</span><span>                    }
+</span><span>                    .</span><span style="color:#96b5b4;">into</span><span>());
+</span><span>            }
+</span><span>        };
+</span><span>      }
+</span><span>      Err(_err) =&gt; {
+</span><span>        log::warn!(&quot;</span><span style="color:#a3be8c;">unable to check rate limit for request coming
+</span><span style="color:#a3be8c;">            from ip={}. Skipping validation</span><span>&quot;, ip_address);
+</span><span>        Ok(service.</span><span style="color:#96b5b4;">call</span><span>(req).await?)
+</span><span>      }
+</span><span>    };
+</span><span>  }
+</span><span>  .</span><span style="color:#96b5b4;">boxed_local</span><span>()
+</span><span>}
+</span></code></pre>
+<p>Let's go through the 3 main steps of the above code snippet: </p>
+<ol>
+<li>We get the request IP address, relying on the <a href="https://docs.rs/actix-web/3.0.0-alpha.3/actix_web/dev/struct.ConnectionInfo.html#method.realip_remote_addr">realip_remote_addr</a> utility
+offered by Actix. In the unlikely case we're not able to identity the IP, we return an error;</li>
+<li>We invoke the rate limiter component. Notice the use of the <code>self</code> keyword: the rate limiter is part of our rate limiter instance;</li>
+<li>We match the response of the library and based on the returned response variant we decide what to do next: 
+<ul>
+<li>if <code>RequestAllowed</code> we invoke the carbon intensity endpoint with the <code>service.call(req)</code> syntax; Worth highlighting the fact that the target service invocation is completely generic: this will give us the ability to potentially use the same middleware on different endpoints without changing the code!</li>
+<li>if <code>RequestThrottled</code> we avoid calling the internal endpoint and we build an API error object; </li>
+<li>in case of errors returned by the rate limiter library, we log a warning message and we move on with the carbon intensity endpoint invocation, as if the request was allowed. </li>
+</ul>
+</li>
+</ol>
+<h2 id="configuring-it">Configuring it</h2>
+<p>Finally, let's see how we can configure our rate limiter instance at boot time in our project: </p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">impl </span><span>Application {
+</span><span>    </span><span style="color:#65737e;">/// Builds the main app entrypoint
+</span><span>    </span><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">build</span><span>(</span><span style="color:#bf616a;">settings</span><span>: AppSettings) -&gt; </span><span style="color:#b48ead;">Self </span><span>{
+</span><span>        </span><span style="color:#b48ead;">let</span><span> rate_limiter = RateLimiterFactory::fixed_window()
+</span><span>            .</span><span style="color:#96b5b4;">with_window_size</span><span>(settings.rate_limiter.window_size)
+</span><span>            .</span><span style="color:#96b5b4;">with_window_duration</span><span>(Duration::from_secs(
+</span><span>                settings.rate_limiter.window_duration_seconds,
+</span><span>            ))
+</span><span>            .</span><span style="color:#96b5b4;">with_redis_settings</span><span>(RedisSettings {
+</span><span>                host: settings.rate_limiter.redis_server.host,
+</span><span>                port: settings.rate_limiter.redis_server.port,
+</span><span>            })
+</span><span>            .</span><span style="color:#96b5b4;">build</span><span>()
+</span><span>            .</span><span style="color:#96b5b4;">expect</span><span>(&quot;</span><span style="color:#a3be8c;">unable to setup rate limiter component</span><span>&quot;);
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">let</span><span> server = HttpServer::new(</span><span style="color:#b48ead;">move </span><span>|| {
+</span><span>            App::new()
+</span><span>                .</span><span style="color:#96b5b4;">wrap</span><span>(Logger::default())
+</span><span>                .</span><span style="color:#96b5b4;">route</span><span>(&quot;</span><span style="color:#a3be8c;">/health_check</span><span>&quot;, web::get().</span><span style="color:#96b5b4;">to</span><span>(health_check))
+</span><span>                .</span><span style="color:#96b5b4;">service</span><span>(
+</span><span>                    web::scope(&quot;</span><span style="color:#a3be8c;">/carbon/intensity</span><span>&quot;)
+</span><span>                        .</span><span style="color:#96b5b4;">wrap</span><span>(RateLimiterMiddlewareFactory
+</span><span>                            ::with_rate_limiter(Rc::new(
+</span><span>                                rate_limiter.</span><span style="color:#96b5b4;">clone</span><span>())
+</span><span>                            ))
+</span><span>                        .</span><span style="color:#96b5b4;">route</span><span>(&quot;&quot;, web::get().</span><span style="color:#96b5b4;">to</span><span>(get_intensity)),
+</span><span>                )
+</span><span>        });
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">let</span><span> actix_server = server
+</span><span>            .</span><span style="color:#96b5b4;">bind</span><span>((settings.http_server.host, settings.http_server.port))
+</span><span>            .</span><span style="color:#96b5b4;">expect</span><span>(&quot;</span><span style="color:#a3be8c;">unable to build app</span><span>&quot;);
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">let</span><span> port = actix_server.</span><span style="color:#96b5b4;">addrs</span><span>()[</span><span style="color:#d08770;">0</span><span>].</span><span style="color:#96b5b4;">port</span><span>();
+</span><span>        </span><span style="color:#b48ead;">let</span><span> http_server = actix_server.</span><span style="color:#96b5b4;">run</span><span>();
+</span><span>        Application { http_server, port }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>The above code should be quite self explanatory: we're just building the rate limiter instance and registering 
+it on our API. The only bit probably worth highlighting here is the use of the <a href="https://doc.rust-lang.org/std/rc/struct.Rc.html">reference-counting struct</a> <code>Rc</code>, which is a consequence of both how <a href="https://actix.rs/docs/application#shared-mutable-state">Actix HttpServer works</a> and how we <a href="https://doc.rust-lang.org/book/ch15-04-rc.html">can borrow references in Rust</a>.</p>
+<h2 id="testing-our-setup">Testing our setup</h2>
+<p>Believe it or not, we're basically done with coding. At this point we just have to define a bunch of integration tests to validate our setup. I've written a few of them, which are available <a href="https://github.com/dili91/rate-limiting/blob/main/carbon-intensity-api/tests/integration.rs">on my repository</a>. I'll skip their review here.</p>
+<h3 id="basic-manual-tests">Basic, manual tests</h3>
+<p>Instead, let's refocus on our initial requirements and validate the expressiveness of our solution with a couple of manual tests. To do so, let's start our API locally and invoke it via a browser or CLI tool:</p>
+<pre data-lang="sh" style="background-color:#2b303b;color:#c0c5ce;" class="language-sh "><code class="language-sh" data-lang="sh"><span style="color:#bf616a;">$</span><span> http :8080/carbon/intensity
+</span><span style="color:#bf616a;">~</span><span>&gt;
+</span><span>
+</span><span style="color:#bf616a;">HTTP/1.1</span><span> 200 OK
+</span><span style="color:#bf616a;">Connection:</span><span> keep-alive
+</span><span style="color:#bf616a;">Content-Length:</span><span> 114
+</span><span style="color:#bf616a;">Content-Type:</span><span> application/json
+</span><span style="color:#bf616a;">Date:</span><span> Fri, 03 Feb 2023 14:35:58 GMT
+</span><span style="color:#bf616a;">Server:</span><span> nginx/1.23.3
+</span><span style="color:#bf616a;">x-remaining-request:</span><span> 4
+</span><span>
+</span><span>{
+</span><span>    &quot;</span><span style="color:#a3be8c;">from</span><span>&quot;</span><span style="color:#bf616a;">: </span><span>&quot;</span><span style="color:#a3be8c;">2018-01-20T12:00Z</span><span>&quot;,
+</span><span>    &quot;</span><span style="color:#a3be8c;">intensity</span><span>&quot;</span><span style="color:#bf616a;">: </span><span>{
+</span><span>        &quot;</span><span style="color:#a3be8c;">actual</span><span>&quot;: 263,
+</span><span>        &quot;</span><span style="color:#a3be8c;">forecast</span><span>&quot;: 266,
+</span><span>        &quot;</span><span style="color:#a3be8c;">index</span><span>&quot;: &quot;</span><span style="color:#a3be8c;">Moderate</span><span>&quot;
+</span><span>    },
+</span><span>    &quot;</span><span style="color:#a3be8c;">to</span><span>&quot;</span><span style="color:#bf616a;">: </span><span>&quot;</span><span style="color:#a3be8c;">2018-01-20T12:30Z</span><span>&quot;
+</span><span>}
+</span></code></pre>
+<p>As expected, the first request will go through and return some (currently static) carbon intensity data. We can also see the extra information about the remaining budget of 4 request in the current window for our IP address, passed with the <code>x-remaining-request</code> HTTP response header: we should expect the same exact response (except for the <code>x-remaining-request</code> value 😀) for the next 4 attempts.</p>
+<p>If we call our endpoint for 5 more times, on the overall 6th attempt we will get a very explicit error:</p>
+<pre data-lang="sh" style="background-color:#2b303b;color:#c0c5ce;" class="language-sh "><code class="language-sh" data-lang="sh"><span style="color:#bf616a;">$</span><span> http :8080/carbon/intensity
+</span><span style="color:#bf616a;">~</span><span>&gt;
+</span><span>
+</span><span style="color:#bf616a;">HTTP/1.1</span><span> 429 Too Many Requests
+</span><span style="color:#bf616a;">Connection:</span><span> keep-alive
+</span><span style="color:#bf616a;">Content-Length:</span><span> 22
+</span><span style="color:#bf616a;">Date:</span><span> Fri, 03 Feb 2023 14:36:19 GMT
+</span><span style="color:#bf616a;">Server:</span><span> nginx/1.23.3
+</span><span style="color:#bf616a;">retry-after:</span><span> 40
+</span><span>
+</span><span style="color:#bf616a;">You</span><span>&#39;</span><span style="color:#a3be8c;">ve been throttled!
+</span></code></pre>
+<p>Both the standard <code>429</code> HTTP status and the <code>Retry-After</code> header should make us feel happy with the result!</p>
+<h3 id="simulating-a-burst-of-request">Simulating a burst of request</h3>
+<p>Let's try to make this test a bit more robust by simulating much more requests simultaneously. </p>
+<h4 id="docker-compose-setup">Docker compose setup</h4>
+<p>To do that, we'll boot a slightly more complex deployment locally with the help of <a href="https://docs.docker.com/compose/">Docker compose</a>. Our deployment will be made of: </p>
+<ul>
+<li>1 Redis server;</li>
+<li>3 Carbon intensity API replicas;</li>
+<li>1 load balancer/reverse proxy sitting at the edge of our setup, which will receive HTTP requests on port 8080 and forward those to the API.</li>
+</ul>
+<p>The <a href="https://github.com/dili91/rate-limiting/blob/main/carbon-intensity-api/compose.yaml">compose file</a> for the test stack I'm talking about is available on my repository. To have that running locally, we just have to run a <code>docker-compose up</code> command from the <code>carbon-intensity-api</code> root folder.</p>
+<h4 id="generating-load-with-k6">Generating load with <code>k6</code></h4>
+<p>With the help of <a href="https://k6.io/">k6</a> we'll then generate <code>500</code> requests to our <code>GET /carbon/intensity</code> endpoint <em>simultaneously</em>, using <code>25</code> virtual users/threads. If our rate limiting logic works as expected, only 5 requests should succeed and we should get <code>429</code>s for the rest.</p>
+<p>Let's revive some Javascript skills now and define a <a href="https://github.com/dili91/rate-limiting/blob/main/carbon-intensity-api/distributed_test.js">distributed_test.js</a> file:</p>
+<pre data-lang="javascript" style="background-color:#2b303b;color:#c0c5ce;" class="language-javascript "><code class="language-javascript" data-lang="javascript"><span style="color:#b48ead;">import </span><span style="color:#bf616a;">http </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">k6/http</span><span>&#39;;
+</span><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">Counter </span><span>} </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">k6/metrics</span><span>&#39;;
+</span><span style="color:#b48ead;">import </span><span>{ </span><span style="color:#bf616a;">check </span><span>} </span><span style="color:#b48ead;">from </span><span>&#39;</span><span style="color:#a3be8c;">k6</span><span>&#39;;
+</span><span>
+</span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">api_responses </span><span>= new Counter(&#39;</span><span style="color:#a3be8c;">api_responses</span><span>&#39;);
+</span><span>
+</span><span style="color:#b48ead;">export const </span><span style="color:#bf616a;">options </span><span>= {
+</span><span>    vus: </span><span style="color:#d08770;">25</span><span>,
+</span><span>    iterations: </span><span style="color:#d08770;">500</span><span>,
+</span><span>    thresholds: {
+</span><span>        &#39;</span><span style="color:#a3be8c;">api_responses</span><span>&#39;: [
+</span><span>            &#39;</span><span style="color:#a3be8c;">count == 100</span><span>&#39;
+</span><span>        ],
+</span><span>        &#39;</span><span style="color:#a3be8c;">api_responses{status:429}</span><span>&#39;: [
+</span><span>            &#39;</span><span style="color:#a3be8c;">count == 495</span><span>&#39;
+</span><span>        ],
+</span><span>        &#39;</span><span style="color:#a3be8c;">api_responses{status:200}</span><span>&#39;: [
+</span><span>            &#39;</span><span style="color:#a3be8c;">count == 5</span><span>&#39;
+</span><span>        ],
+</span><span>    },
+</span><span>};
+</span><span>
+</span><span style="color:#b48ead;">export default function </span><span>() {
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">res </span><span>= </span><span style="color:#bf616a;">http</span><span>.</span><span style="color:#96b5b4;">get</span><span>(&#39;</span><span style="color:#a3be8c;">http://localhost:8080/carbon/intensity</span><span>&#39;);
+</span><span>
+</span><span>    </span><span style="color:#bf616a;">api_responses</span><span>.</span><span style="color:#96b5b4;">add</span><span>(</span><span style="color:#d08770;">1</span><span>, {status: </span><span style="color:#bf616a;">res</span><span>.status})
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">const </span><span style="color:#bf616a;">output </span><span>= </span><span style="color:#8fa1b3;">check</span><span>(</span><span style="color:#bf616a;">res</span><span>, {
+</span><span>        &#39;</span><span style="color:#a3be8c;">Status code is either 200 or 429</span><span>&#39;: (</span><span style="color:#bf616a;">r</span><span>) 
+</span><span>            </span><span style="color:#b48ead;">=&gt; </span><span style="color:#bf616a;">r</span><span>.status === </span><span style="color:#d08770;">200 </span><span>|| </span><span style="color:#bf616a;">r</span><span>.status === </span><span style="color:#d08770;">429</span><span>,
+</span><span>    });
+</span><span>}
+</span></code></pre>
+<p>By running the above script from the CLI with <code>k6 run distributed_test.js</code>, we should be able to validate our
+load test results:</p>
+<figure>
+  <img src="/assets/images/posts/2023-01-15_implementing-a-rate-limiter-for-our-api-in-rust/distributed_test.png" alt="Distributed test">
+  <br>
+  <figcaption>Load test results on k6</figcaption>
+</figure>
+<p>And... yay! 🎉</p>
+<h2 id="bonus-points-sliding-window-algorithm">Bonus points: <em>Sliding window</em> algorithm</h2>
+<p>Before wrapping up, let's very briefly mention one last potential improvement (for now!) for our library.</p>
+<p><a href="https://adilisio.com/posts/implementing-a-rate-limiter-for-our-api-in-rust/#fixed-window">As we saw</a>, the biggest drawback of the <em>Fixed window</em> algorithm is that it can't really prevent limits overflows if burst of requests are hitting our API across two adjacent windows.</p>
+<p>To overcome this limitation, we could have implemented instead a <em>Sliding window</em> algorithm, leveraging Redis <a href="https://redis.io/docs/data-types/sorted-sets/#:~:text=A%20Redis%20sorted%20set%20is,Leaderboards.">sorted sets</a>. Interested readers that are still alive at this point can check a sample<a href="https://github.com/dili91/rate-limiting/blob/main/rate-limiter-rs/src/rate_limiters/sliding_window.rs"> sliding window rate limiter implementation</a> on the same <code>rate-limiter-rs</code> project.</p>
+<h1 id="final-considerations">Final considerations</h1>
+<p>We finally got to the end of this article/experiment. The solution I've showed is far from being production ready and surely not free from bugs, but it helped me becoming more comfortable with the topic of rate limiting and a bit more proficient than I was in Rust, which were the objectives that I had in mind when I started this initiative. </p>
+<p>What I've realized while doing this exercise - and writing about that! - is that rate limiting is a complex and nuanced problem space, with many tradeoffs that most of the times are not even expected at the beginning of an investigation. As such, whilst there are algorithms and best practices around to drive you towards a very robust solution, it's important to understand that it's up to you to find the approach that best fits your particular case and solve your actual problems.</p>
+<p>To conclude, all the code snippets shown on this article are taken from my <a href="https://github.com/dili91/rate-limiting">rate-limiting</a> repository, which is public and more than open for contributions 👋. </p>
+
+  </div>
+
+	
+
+  <div class="pagination">
+  	<a href="https://adilisio.com/posts/fooled-by-prometheus-rate-function/" class="left arrow">&#8592;</a>
+		<a href="#" class="top">Top</a>
+		<a href="https://adilisio.com/posts/sequentially-starting-containers-in-a-kubernetes-pod/" class="right arrow">&#8594;</a>
+  </div>
+
+  </main>
+
+  
+  <footer>
+    <span></span>
+  </footer>
+  
+</body>
+</html>

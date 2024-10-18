@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  
+<title>Asynchronous programming in .NET | Andrea Di Lisio</title>
+
+
+
+<meta property="og:title" content="Asynchronous programming in .NET">
+
+
+
+<meta name="author" content="Andrea Di Lisio">
+
+
+<meta property="og:locale" content="en-US">
+
+
+<meta name="description" content="A few personal notes on writing concurrent apps in .NET">
+<meta property="og:description" content="A few personal notes on writing concurrent apps in .NET">
+
+
+
+<link rel="canonical" href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/">
+<meta property="og:url" content="https://adilisio.com/posts/asynchronous-programming-in-dotnet/">
+
+
+
+<meta property="og:site_name" content="Andrea Di Lisio" />
+
+
+
+
+
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2024-04-08T00:00:00+00:00">
+
+
+
+  <link rel="prev" href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/">
+
+
+
+  <link rel="next" href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/">
+
+
+
+  <meta name="twitter:card" content="summary">
+
+
+
+  <meta property="twitter:title" content="Asynchronous programming in .NET">
+
+
+
+
+
+
+
+
+<script type="application/ld+json">
+{
+  "author": {
+    "@type":"Person",
+	  "name":"Andrea Di Lisio",
+  },
+  "description": "A few personal notes on writing concurrent apps in .NET",
+  "url": "https://adilisio.com/posts/asynchronous-programming-in-dotnet/",
+  "@context":"https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Asynchronous programming in .NET"
+  
+    
+    
+      "datePublished":"2024-04-08T00:00:00+00:00",
+    
+    "mainEntityOfPage":{
+      "@type":"WebPage",
+      "@id":"https://adilisio.com/posts/asynchronous-programming-in-dotnet/"
+    },
+  
+}
+</script>
+
+  
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="https://adilisio.com/rss.xml">
+  
+
+  <link rel="stylesheet" href="https://adilisio.com/main.css">
+  <link rel="stylesheet" href="https://adilisio.com/custom.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Libre+Baskerville:400,400i,700">
+
+  <link rel="icon" type="image/png" sizes="32x32" href="https://adilisio.com/assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://adilisio.com/assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://adilisio.com/assets/apple-touch-icon.png">
+
+  
+    <link type="application/atom+xml" rel="alternate" href="https://adilisio.com/rss.xml" title="Andrea Di Lisio" />
+  
+
+  
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D2G3RGMKL8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D2G3RGMKL8');
+    </script>
+  
+
+  
+  
+</head>
+
+<body>
+  
+  <nav class="nav">
+    <div class="nav-container">
+      <a href="https://adilisio.com/">
+        <h2 class="nav-title">Andrea Di Lisio</h2>
+      </a>
+      <ul>
+        <li><a href="https://adilisio.com/">Resume</a></li>
+        <li><a href="https://adilisio.com/posts">Posts</a></li>
+        <li><a target="_blank" href="https://github.com/dili91">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+
+  <main>
+    
+  <div class="post">
+  	<div class="post-info">
+  		<span>Written by</span> Andrea Di Lisio<br>
+  		
+  		<span>on&nbsp;</span><time datetime="2024-04-08">April  8, 2024</time>
+  	</div>
+  	<h1 class="post-title">Asynchronous programming in .NET</h1>
+  	<div class="post-line"></div>
+  	<p><img src="/assets/images/posts/2024-04-08_asynchronous-programming-in-dotnet/concurrency.png" alt="Concurrency" />
+<em>An abstract representation of concurrency, as hallucinated by OpenAI</em></p>
+<!-- no toc -->
+<h1 id="table-of-contents">Table of contents <!-- omit in toc --></h1>
+<ul>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#introduction">Introduction</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#mind-refresher">Mind refresher</a>
+<ul>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#processes">Processes</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#threads">Threads</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#concurrency">Concurrency</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#parallelism">Parallelism</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#net-threadpool-class">.NET ThreadPool class</a>
+<ul>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#worker-and-completionport-threads">Worker and CompletionPort threads</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#what-is-an-io-completion-port">What is an IO Completion port?</a>
+<ul>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#why-not-simply-offloading-work-to-a-worker-thread">Why not simply offloading work to a worker thread?</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#what-about-unix">What about UNIX?</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#default-configuration">Default configuration</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#custom-values">Custom values</a>
+<ul>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#minimum-values-are-too-high-resource-starvation">Minimum values are too high: resource starvation</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#minimum-values-are-too-low-throttling-delays">Minimum values are too low: throttling delays</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#how-to-check-your-app-configuration">How to check your app configuration</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#when-does-threadpool-come-into-play">When does ThreadPool come into play</a></li>
+</ul>
+</li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#writing-asynchronous-code">Writing asynchronous code</a>
+<ul>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#io-bound-scenario">IO-bound scenario</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#cpu-bound-scenario">CPU-bound scenario</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#avoid-calling-anything-async">Avoid calling anything Async</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#writing-your-own-async-method">Writing your own async method</a></li>
+<li><a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#configureawait-what">ConfigureAwait what?</a></li>
+</ul>
+</li>
+</ul>
+<h1 id="introduction">Introduction</h1>
+<p>At work, I recently had the opportunity to contribute to our internal AMQP pub-sub reference library for .NET Core applications. Specifically, I upgraded the library's main dependency and <a href="https://github.com/EasyNetQ/EasyNetQ/issues/1758">opted-in for some concurrency optimizations</a> at the AMQP consumers level. </p>
+<p>Although the update itself was relatively straightforward, I realized that I wasn't comfortable enough with the topic of concurrency in the .NET. Therefore, I spent some time reading various documentation and articles related to the subject.</p>
+<p>While I was reading, I wrote a private note to organize and solidify the terms and concepts, that I'm now turning into this blog post.</p>
+<p>I'm sharing this as a small gift to my future self and as a helpful reference for anyone who may need to investigate the same problem space.</p>
+<h1 id="mind-refresher">Mind refresher</h1>
+<p>Before diving into .NET specific stuff - although already familiar with the basic terminology - I invested a few minutes to refresh some basic terminology and concepts.</p>
+<h2 id="processes">Processes</h2>
+<p>A process represents an application or program. As simple as that.</p>
+<h2 id="threads">Threads</h2>
+<p>A <em>thread</em> is a fundamental unit to which the OS allocates processor time inside a <em>process</em>.</p>
+<p>Most of the times, when talking about threads we talk about <em>Operating system</em> or <em>Platform</em> threads. <strong>To not be confused</strong> with abstractions provided by some languages like <a href="https://www.infoworld.com/article/3678148/intro-to-virtual-threads-a-new-approach-to-java-concurrency.html">Java's virtual threads</a></p>
+<p>OS threads are limited in number and parallel execution by the underlying host/hardware: </p>
+<ol>
+<li>The max number of threads that a process can <em>spawn</em> is usually in the tens of thousands (On my Mac <code>kern.num_threads: 20480</code>). To avoid resources starvation, applications usually introduce <em>their</em> limits with a  thread pool.</li>
+<li>The max number of threads that can truly <em>run in parallel</em> is way lower and determined - with some approximation - by the number of CPU cores (8 on my laptop)</li>
+</ol>
+<p>Threads usually have a state associated (a <em>Context</em> to use the .NET terminology), that is extra baggage that might be required to resume a task at a later stage. This is not always explicitly mentioned in docs or included in code blocks, but it's something to be aware of as we'll see later. In .NET </p>
+<h2 id="concurrency">Concurrency</h2>
+<p><em>Concurrency</em> means executing multiple tasks at the same time, but not necessarily simultaneously. This definition implies that concurrent tasks are tasks that can be interrupted and awaited if needed.</p>
+<p>When thinking about concurrency I figure myself preparing a risotto: </p>
+<ul>
+<li>I put some water to boil and forget about it</li>
+<li>While I wait for the water to heat, I clean and cut leek, onions, carrots, parsley, sometimes a potato, etc. Once done I put them in the pot, and forget about it for 1 hour approximately</li>
+<li>While I wait for the broth to be ready... I measure the rice to use, and then I start preparing a bit of onions for the sauce</li>
+<li>And so on...</li>
+</ul>
+<p>As you can see a lot of tasks, that I'm taking care of concurrently, but not in parallel! I've only 2 hands in the end.</p>
+<p>So, in a nutshell, <strong>concurrency is more about optimizing time and resources than going faster</strong>. The requirement for concurrency to happen is having tasks where you have to wait for some condition to happen (the water to boil for instance, or an HTTP response to be returned by an API). A performance improvement is usually a natural consequence of it. </p>
+<h2 id="parallelism">Parallelism</h2>
+<p>By contrast <em>parallelism</em> means doing executing multiple tasks simultaneously. To reuse the same image we used before, we can imagine all the steps to happen at the same time. </p>
+<p><img src="/assets/images/posts/2024-04-08_asynchronous-programming-in-dotnet/cutting-vegetables-parallel.png" alt="Cutting vegetables in parallel" />
+<em>A drawing of a young boy cutting vegetables in parallel, as hallucinated by OpenAI</em></p>
+<h1 id="net-threadpool-class">.NET ThreadPool class</h1>
+<p>Let's now start diving in .NET specific contents. </p>
+<p>As mentioned in one of the refresher's pins, applications are usually limiting their degree of parallelism with the help of a thread pool. </p>
+<p>In .NET, this concept is implemented with the <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.threadpool?view=net-8.0">ThreadPool</a> class, a utility that's meant to ease threads management and to mitigate the risk of accidental resource starvation.</p>
+<p>Threads in .NET can be either <em>foreground</em> and <em>background</em> threads. Foreground threads have the ability to prevent the current application from terminating.</p>
+<p>All threads held by the <code>ThreadPool</code> class are background threads and <strong>there is only one <code>ThreadPool</code> instance per process/application.</strong></p>
+<h2 id="worker-and-completionport-threads">Worker and CompletionPort threads</h2>
+<p>The <code>ThreadPool</code> keeps 2 different pools of threads internally: one for the <em>worker</em> threads and one for <em>completionPort</em> threads. While there’s technically no difference between worker and completion threads, they’re used for different purposes. </p>
+<p><em><strong>Worker threads</strong></em> refer to any thread other than the main thread of your application and can be used to do any kind of work, including waiting for some I/O to complete.</p>
+<p><em><strong>CompletionPort or I/O threads</strong></em> are threads that the Threadpool reserves to dispatch callbacks from the IO completion port. But…</p>
+<h2 id="what-is-an-io-completion-port">What is an IO Completion port?</h2>
+<p>An <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/i-o-completion-ports">I/O Completion Port (IOCP)</a> is a queue-like operating system object that can be used to simultaneously manage multiple I/O operations, <strong>natively available on Windows NT operating system.</strong></p>
+<p>An important component of IOCPs are <em>file handles</em>: handles to any asynchronous-able I/O endpoint - a file, a stream, a network socket…</p>
+<p>Whenever an operation on any of the <em>file handles</em> completes, and I/O completion packet is queued into the IOCP. This is where IOCP Threads come into play: they are in charge of completing the operation that was parked on the completion port.</p>
+<p><img src="/assets/images/posts/2024-04-08_asynchronous-programming-in-dotnet/completion-port.png" alt="Completion port representation" />
+<em>Completion port representation</em></p>
+<h3 id="why-not-simply-offloading-work-to-a-worker-thread">Why not simply offloading work to a worker thread?</h3>
+<p>An alternative to using IOCP threads would be to just use worker threads, but doing so we would block one of our workers just because we’re waiting for an event (on the file handle).</p>
+<p>The <code>ThreadPool</code> class automatically monitor and manage IOCP threads </p>
+<h3 id="what-about-unix">What about UNIX?</h3>
+<p>As mentioned above, IOCP is a Windows-specific component, and as such not available <em>as-is</em> on UNIX systems. 
+The Common Language Runtime (CLR) takes care of creating an abstraction of IOCP in UNIX systems as well. Delving into the host-specific implementation of IOCPs seemed out of scope for my objectives.</p>
+<h2 id="default-configuration">Default configuration</h2>
+<p>The thread pool provides new worker threads or I/O completion threads on demand until it reaches the minimum for each category. <strong>By default, the minimum number of threads is set to the number of processors on a system</strong> (<code>Environment.ProcessorCount</code> property)</p>
+<p>The maximum value configured by default might depend on multiple factors, but In general, it is insanely high and a program should <em>never</em> get close. </p>
+<p>These are the results I've found while running a test I did on my 8-Core M1 MacBook Pro:</p>
+<pre style="background-color:#2b303b;color:#c0c5ce;"><code><span>Environment.ProcessorCount: 8
+</span><span>MinWorkerThreads: 8
+</span><span>MinCompletionPortThreads: 1
+</span><span>MaxWorkerThreads: 32767
+</span><span>MaxCompletionPortThreads: 1000
+</span></code></pre>
+<h2 id="custom-values">Custom values</h2>
+<p>The ThreadPool class comes with 2 static utility that helps updating the minimum and maximum values for worker and IOCP threads, namely <code>SetMinThreads</code> and <code>SetMaxThreads</code>.</p>
+<h3 id="minimum-values-are-too-high-resource-starvation">Minimum values are too high: resource starvation</h3>
+<p>Higher number of minimum threads will increase the amount of context-switching needed when jumping from thread to thread. CPU and Memory usage will be affected.</p>
+<h3 id="minimum-values-are-too-low-throttling-delays">Minimum values are too low: throttling delays</h3>
+<p>This <a href="https://gist.github.com/JonCole/e65411214030f0d823cb#recommendation">note</a> clarifies that the minimum number of worker/IOCP threads should line up with the expected burst of requests that your application can handle. Otherwise, throttling kicks-in adding a delay of ~500ms for each newly created thread. </p>
+<p>This can lead to significant issues when your application receives a burst of requests greater than your minimum values.</p>
+<h2 id="how-to-check-your-app-configuration">How to check your app configuration</h2>
+<p>To investigate your app’s ThreadPool configuration one can leverage the <code>GetMinThreads</code> and <code>GetMaxThreads</code> ThreadPool’s static methods.</p>
+<p>Also <code>Environment.ProcessorCount</code> property can be checked for additional context.</p>
+<h2 id="when-does-threadpool-come-into-play">When does ThreadPool come into play</h2>
+<p>Quoting the .NET <a href="https://learn.microsoft.com/en-us/dotnet/standard/threading/the-managed-thread-pool">docs</a>, the ThreadPool class is used in many different places: </p>
+<blockquote>
+<p>.NET uses thread pool threads for many purposes, including Task Parallel Library (TPL) operations, asynchronous I/O completion, timer callbacks, registered wait operations, asynchronous method calls using delegates, and System.Net socket connections.</p>
+</blockquote>
+<p>The easiest way to leverage it is to use the <a href="https://learn.microsoft.com/en-us/dotnet/standard/parallel-programming/task-parallel-library-tpl">Task Parallel Library (TPL)</a>. </p>
+<p>Basically, whenever your using a <code>Task</code> or <code>awaiting</code> something async in your code you're already taking advantages of it. Coming from a Java background, I have to admit that this sounded a bit unexpected but reassuring, when I read it for the first time! It turns out that when doing asynchronous programming .NET, developers can be sort-of safe without necessarily encountering headaches due to thread management problems.</p>
+<h1 id="writing-asynchronous-code">Writing asynchronous code</h1>
+<p>There are usually 2 macro scenarios where you want to write asynchronous code. Again, I can't help but quoting the very well written official docs: </p>
+<blockquote>
+<p>The core of async programming is the <code>Task</code> and <code>Task&lt;T&gt;</code> objects, which model asynchronous operations. They are supported by the <code>async</code> and <code>await</code> keywords. The model is fairly simple in most cases:</p>
+<p>For I/O-bound code, you await an operation that returns a <code>Task</code> or <code>Task&lt;T&gt;</code> inside of an async method.</p>
+<p>For CPU-bound code, you await an operation that is started on a background thread with the <code>Task.Run</code> method.</p>
+</blockquote>
+<p>Let's see a couple of examples to clarify further.</p>
+<h2 id="io-bound-scenario">IO-bound scenario</h2>
+<p>An IO-bound scenario manifests whenever your awaiting on I/O: a file, a network call...
+Let's say your code integrates an external REST API to fetch weather forecast information. </p>
+<p>A naive, blocking implementation of an hypothetical <code>GetWeatherForecast</code> function would be something like this: </p>
+<pre data-lang="cs" style="background-color:#2b303b;color:#c0c5ce;" class="language-cs "><code class="language-cs" data-lang="cs"><span style="color:#b48ead;">public </span><span>Forecast </span><span style="color:#8fa1b3;">GetWeatherForecast</span><span>(</span><span style="color:#b48ead;">string </span><span style="color:#bf616a;">city</span><span>){
+</span><span>    </span><span style="color:#b48ead;">var </span><span style="color:#bf616a;">request </span><span>= new HttpRequestMessage(
+</span><span>      </span><span style="color:#bf616a;">HttpMethod</span><span>.</span><span style="color:#bf616a;">Get</span><span>, $&quot;</span><span style="color:#a3be8c;">https://weather-forecast.com/api/city=</span><span>{</span><span style="color:#bf616a;">city</span><span>}&quot;);
+</span><span>	  
+</span><span>    </span><span style="color:#b48ead;">var </span><span style="color:#bf616a;">response </span><span>= </span><span style="color:#bf616a;">_httpClient</span><span>.</span><span style="color:#bf616a;">Send</span><span>(</span><span style="color:#bf616a;">request</span><span>);
+</span><span>		
+</span><span>    </span><span style="color:#b48ead;">var </span><span style="color:#bf616a;">responseBody </span><span>= new StreamReader(</span><span style="color:#bf616a;">response</span><span>.</span><span style="color:#bf616a;">Content</span><span>.</span><span style="color:#bf616a;">ReadAsStream</span><span>()).</span><span style="color:#bf616a;">ReadToEnd</span><span>();      
+</span><span>		
+</span><span>    </span><span style="color:#65737e;">// deserialise the response body into a Forecast instance and return it
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">responseBody</span><span>.</span><span style="color:#bf616a;">ToForecast</span><span>();
+</span><span>}
+</span></code></pre>
+<p>This code would completely block the execution of the current thread until a response from the weather-forecast.com API is returned, and new requests would queue up: not very efficient.</p>
+<p>What we could do instead is leverage the asynchronous <code>GetAsync</code> method offered available on the <code>HttpClient</code> type, and free up the current thread's execution,
+while awaiting an HTTP response from the external API. To do so, we have to slightly amend our code: </p>
+<pre data-lang="cs" style="background-color:#2b303b;color:#c0c5ce;" class="language-cs "><code class="language-cs" data-lang="cs"><span style="color:#b48ead;">public </span><span>async </span><span style="color:#bf616a;">static Task</span><span>&lt;</span><span style="color:#bf616a;">Forecast</span><span>&gt; </span><span style="color:#bf616a;">GetWeatherForecastAsync</span><span>(</span><span style="color:#b48ead;">string </span><span style="color:#bf616a;">city</span><span>){
+</span><span>    </span><span style="color:#b48ead;">var </span><span style="color:#bf616a;">response </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">_httpClient
+</span><span>      .</span><span style="color:#bf616a;">GetAsync</span><span>($&quot;</span><span style="color:#a3be8c;">https://weather-forecast.com/api/city=</span><span>{</span><span style="color:#bf616a;">city</span><span>}&quot;);
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">var </span><span style="color:#bf616a;">responseBody </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">response</span><span>.</span><span style="color:#bf616a;">Content</span><span>.</span><span style="color:#bf616a;">ReadAsStringAsync</span><span>();
+</span><span>
+</span><span>    </span><span style="color:#65737e;">// deserialise the response body into a Forecast instance and return it
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">responseBody</span><span>.</span><span style="color:#bf616a;">ToForecast</span><span>();
+</span><span>}
+</span></code></pre>
+<p>Notice how we replaced the blocking codes with a few <code>async</code> and <code>await</code> keywords. First of all we await on the network call to be completed. 
+Then, we also await when reading the raw response content to a string. Last but not least, to be able to use the <code>await</code> keyword we need 
+to mark our signature with the <code>async</code> keyword and wrap the Forecast type into a <code>Task</code> wrapper. It's also a good practice to add the <code>Async</code> 
+suffix to our original <code>GetWeatherForecast</code> method.</p>
+<p>In this last case, our code leverage native async methods offered by the .NET runtime via the <a href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpclient.getasync?view=net-8.0">HttpClient</a> and <a href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.httpcontent.readasstringasync?view=net-8.0">HttpContent</a> types. </p>
+<p>The <code>await</code> keyword included in our new code hides some sort of magic. When that is declared, the execution of the awaited task (the HTTP call or the serialization bits in the above case) are offloaded to <a href="https://adilisio.com/posts/asynchronous-programming-in-dotnet/#worker-and-completionport-threads">IO Threads</a> and the current thread is freed up and can serve other requests.</p>
+<p>Hopefully this explains why I said earlier that leveraging async code is <strong>more about optimizing resources usage</strong>, and only secondarily making your code go faster.</p>
+<h2 id="cpu-bound-scenario">CPU-bound scenario</h2>
+<p>The classic example of a CPU-bound scenario is when you have to run some expensive computation. In this case, you want to keep your service/app responsive, <em>while</em> running the numbers. </p>
+<p>Unlike the IO-bound, here there's not much to wait on, most of the work needs to happen locally on your host and cores, so what you should do is offloading the expensive task to a worker thread.</p>
+<pre data-lang="cs" style="background-color:#2b303b;color:#c0c5ce;" class="language-cs "><code class="language-cs" data-lang="cs"><span style="color:#b48ead;">public </span><span>async </span><span style="color:#bf616a;">static Task</span><span>&lt;</span><span style="color:#bf616a;">Result</span><span>&gt; </span><span style="color:#bf616a;">ComputeResult</span><span>(){
+</span><span>    </span><span style="color:#b48ead;">var </span><span style="color:#bf616a;">result </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">Task</span><span>.</span><span style="color:#bf616a;">Run</span><span>(() </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>      </span><span style="color:#65737e;">// an expensive, time consuming calculation...  
+</span><span>    });
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">result
+</span><span>}
+</span></code></pre>
+<p>The content of the function passed to the <code>Task.Run</code> method gets offloaded to one of the ThreadPool's worker thread, while the current thread is freed up and can accept and process other requests without undesired side effects on the experienced responsiveness/latency. </p>
+<h2 id="avoid-calling-anything-async">Avoid calling anything Async</h2>
+<p>Notice how in the las <code>ComputeResult</code> method I did not add an <code>Async</code> suffix. What it initially could look like an omission, is indeed a deliberate choice. <a href="https://www.ben-morris.com/why-you-shouldnt-create-asynchronous-wrappers-with-task-run/">As brilliantly explained on this post</a>, one should mark as <code>Async</code> whatever is supposed to leverage IO threads! As I hope I've clearly explained at this point, concurrency != parallelism.</p>
+<p>An individual interested in concurrency improvements is primarily concerned with efficiency rather than execution time: the focus is on making sure that the application can scale and handle as much load as it can.</p>
+<p>Wrapping a call to <code>Task.Run(...)</code> inside a method ending with the <code>Async</code> is probably causing the exact opposite of the what a consumer interested in concurrency looks like. </p>
+<p>A consumer invoking the following code would simply consume another (worker) thread, rather than reusing the existing resources:</p>
+<pre data-lang="cs" style="background-color:#2b303b;color:#c0c5ce;" class="language-cs "><code class="language-cs" data-lang="cs"><span style="color:#b48ead;">public </span><span>async </span><span style="color:#bf616a;">static Task</span><span>&lt;</span><span style="color:#bf616a;">Result</span><span>&gt; </span><span style="color:#bf616a;">ComputeResultAsync</span><span>(){
+</span><span>    </span><span style="color:#b48ead;">var </span><span style="color:#bf616a;">result </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">Task</span><span>.</span><span style="color:#bf616a;">Run</span><span>(() </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>      </span><span style="color:#65737e;">// an expensive, time consuming calculation...  
+</span><span>    });
+</span><span>    </span><span style="color:#b48ead;">return </span><span style="color:#bf616a;">result
+</span><span>}
+</span></code></pre>
+<h2 id="writing-your-own-async-method">Writing your own async method</h2>
+<p>Most of the times our async methods (like the previous <code>GetWeatherForecastAsync</code>) leverage APIs that <a href="https://learn.microsoft.com/en-us/dotnet/visual-basic/programming-guide/concepts/async/#BKMK_APIAsyncMethods">are <em>natively</em> async</a>.</p>
+<p>One looking to implement their own asynchronous method should take advantages of the <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskcompletionsource-1?view=net-8.0">TaskCompletionSource&lt;TResult&gt; class</a>.</p>
+<p>How to use the <code>TaskCompletionSource&lt;TResult&gt;</code> class goes beyond the objective of this post.<br />
+The HttpContent's <code>ReadAsStringAsync()</code> <a href="https://github.com/microsoft/referencesource/blob/51cf7850defa8a17d815b4700b67116e3fa283c2/System/net/System/Net/Http/HttpContent.cs#L60">implementation</a> offers a juicy example though.</p>
+<h2 id="configureawait-what">ConfigureAwait what?</h2>
+<p>In .NET each thread has an associated state, called <em>Context</em>. In a .NET application hosting a REST API, a context is for instance the HTTP request associated to an API call.</p>
+<p>How this context behave can be controlled via the <a href="https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task.configureawait?view=net-8.0">Task</a> class. By default, when a task is awaited, its state is captured by the OS, and when a task resumes its original context is re-attached. </p>
+<p>Resuming a thread with its original state might be useful for UI updates, but it's often (at least in my experience) not required.
+Ase these lookup and re-attach operations have consequences the performances of our thread management solution, the general advice is to capture
+the Thread's context only when required.</p>
+<p>To opt-out from the default thread's context behavior you can define use the ConfigureAwait(false) method. With reference to one of the code snippets above: </p>
+<pre data-lang="cs" style="background-color:#2b303b;color:#c0c5ce;" class="language-cs "><code class="language-cs" data-lang="cs"><span style="color:#b48ead;">var </span><span style="color:#bf616a;">forecast </span><span>= </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">GetWeatherForecastAsync</span><span>(&quot;</span><span style="color:#a3be8c;">Milan</span><span>&quot;).</span><span style="color:#bf616a;">ConfigureAwait</span><span>(</span><span style="color:#d08770;">false</span><span>);
+</span></code></pre>
+
+  </div>
+
+	
+
+  <div class="pagination">
+  	<a href="https://adilisio.com/posts/elevate-your-prometheus-alerts-with-the-help-of-unit-tests/" class="left arrow">&#8592;</a>
+		<a href="#" class="top">Top</a>
+		<a href="https://adilisio.com/posts/my-serverless-gym-booking-assistant/" class="right arrow">&#8594;</a>
+  </div>
+
+  </main>
+
+  
+  <footer>
+    <span></span>
+  </footer>
+  
+</body>
+</html>
